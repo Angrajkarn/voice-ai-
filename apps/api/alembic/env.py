@@ -23,7 +23,14 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Set the SQLAlchemy URL from environment variable
-config.set_main_option('sqlalchemy.url', os.getenv('DATABASE_URL', 'postgresql+asyncpg://postgres:postgres@localhost:5432/voiceai'))
+# Use synchronous driver for alembic migrations
+database_url = os.getenv('DATABASE_URL', 'postgresql+asyncpg://postgres:postgres@localhost:5432/voiceai')
+# Convert async URL to sync for alembic
+if database_url.startswith('postgresql+asyncpg://'):
+    database_url = database_url.replace('postgresql+asyncpg://', 'postgresql://')
+elif database_url.startswith('postgresql+psycopg2://'):
+    pass  # already sync
+config.set_main_option('sqlalchemy.url', database_url)
 
 # target_metadata for 'autogenerate' support
 target_metadata = Base.metadata
