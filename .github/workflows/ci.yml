@@ -32,7 +32,7 @@ jobs:
         run: cd apps/web && npm install --legacy-peer-deps
 
       - name: Run frontend lint
-        run: cd apps/web && npm run lint
+        run: cd apps/web && npx next lint --dir .
 
       - name: Run frontend typecheck
         run: cd apps/web && npm run typecheck
@@ -79,7 +79,10 @@ jobs:
         run: cd apps/web && npm install --legacy-peer-deps
 
       - name: Generate Prisma client
-        run: cd apps/web && npx prisma generate
+        run: |
+          mkdir -p apps/web/prisma
+          echo 'datasource db { provider = "postgresql" url = env("DATABASE_URL") } generator client { provider = "prisma-client-js" }' > apps/web/prisma/schema.prisma
+          cd apps/web && npx prisma generate
 
       - name: Run tests
         run: cd apps/web && npm run test

@@ -5,7 +5,7 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
-from typing: AsyncGenerator
+from typing import AsyncGenerator
 import asyncio
 
 from app.core.config import settings
