@@ -311,7 +311,7 @@ jobs:
       - name: Run dependency check
         run: |
           pip install safety
-          cd apps/api && safety check -r requirements.txt
+          cd apps/api && safety scan --policy .safety-policy.yml -r requirements.txt
 
       - name: Run npm audit
         run: |

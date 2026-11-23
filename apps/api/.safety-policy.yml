@@ -1,0 +1,19 @@
+# Safety Policy File
+# This file configures which vulnerabilities to ignore during safety scans
+# See: https://docs.safetycli.com/policies/
+
+ignore-vulnerabilities:
+  # python-jose CVE-2026-85394 - Improper Verification of Cryptographic Signature
+  # This affects ECDSA keys with OpenSSH format which we don't use
+  # We use RS256 algorithm with standard PEM keys
+  - id: "SFTY-20260903-64758"
+    reason: "We use RS256 with standard PEM keys, not ECDSA with OpenSSH format. The vulnerable code path is not used in our application."
+    expires: "2026-12-31"  # Re-evaluate by end of year
+
+  # Note: Other vulnerabilities were fixed by upgrading packages:
+  # - pytest >= 9.0.3 (fixed CVE-2025-71176)
+  # - python-jose >= 3.4.0 (other CVEs fixed)
+  # - apscheduler >= 3.12.0 (fixed deserialization issue)
+  # - python-dotenv >= 1.2.2 (fixed symlink handling)
+  # - python-multipart >= 0.0.31 (fixed DoS)
+  # - twilio >= 9.5.0 (fixed certifi issues)
