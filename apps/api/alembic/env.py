@@ -7,7 +7,6 @@ import sys
 # Add the app directory to the path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.db.session import Base
 from app.models import (  # noqa: F401
     user, organization, customer, campaign, campaign_customer,
     call, call_transcript, call_recording, callback,
@@ -31,6 +30,15 @@ if database_url.startswith('postgresql+asyncpg://'):
 elif database_url.startswith('postgresql+psycopg2://'):
     pass  # already sync
 config.set_main_option('sqlalchemy.url', database_url)
+
+# Import models after setting the URL
+from app.db.session import Base
+from app.models import (  # noqa: F401
+    user, organization, customer, campaign, campaign_customer,
+    call, call_transcript, call_recording, callback,
+    integration, sync_log, automation_log,
+    suppression_list, consent_record, notification, audit_log
+)
 
 # target_metadata for 'autogenerate' support
 target_metadata = Base.metadata

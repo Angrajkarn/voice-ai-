@@ -33,7 +33,7 @@
     "@radix-ui/react-switch": "^1.1.0",
     "@radix-ui/react-popover": "^1.1.0",
     "@radix-ui/react-progress": "^1.1.0",
-    "lucide-react": "^0.450.0",
+    "lucide-react": "^0.468.0",
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.5.0",
     "date-fns": "^4.1.0",
