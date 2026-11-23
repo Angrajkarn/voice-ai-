@@ -1,0 +1,127 @@
+# Campaign schemas
+
+from pydantic import BaseModel, Field, field_validator
+from typing import Optional, List, Dict, Any
+from datetime import datetime
+from uuid import UUID
+from app.models.enums import CampaignStatus
+
+
+class CampaignBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    description: Optional[str] = Field(None, max_length=500)
+    purpose: str = Field(..., min_length=1, max_length=1000)
+    ai_instructions: str = Field(..., min_length=1, max_length=10000)
+    opening_script: str = Field(..., min_length=1, max_length=2000)
+    knowledge_base: Optional[str] = Field(None, max_length=20000)
+    voice_id: str = Field(default="alloy", min_length=1, max_length=50)
+    language: str = Field(default="en-IN", pattern=r'^(en-IN|hi-IN|hinglish|en-US|en-GB)$')
+    supported_languages: List[str] = Field(default=["en-IN", "hi-IN", "hinglish"], min_length=1)
+    max_calls_per_day: int = Field(default=100, ge=1, le=10000)
+    max_retry_attempts: int = Field(default=3, ge=0, le=10)
+    delay_between_calls: int = Field(default=30, ge=0, le=3600)
+    calling_window_start: str = Field(default="09:00", pattern=r'^([01]\d|2[0-3]):([0-5]\d)$')
+    calling_window_end: str = Field(default="18:00", pattern=r'^([01]\d|2[0-3]):([0-5]\d)$')
+    calling_timezone: str = Field(default="Asia/Kolkata", pattern=r'^[A-Za-z]+\/[A-Za-z_]+$')
+    skip_weekends: bool = True
+    skip_holidays: bool = False
+    allow_callbacks: bool = True
+    callback_window_start: str = Field(default="09:00", pattern=r'^([01]\d|2[0-3]):([0-5]\d)$')
+    callback_window_end: str = Field(default="18:00", pattern=r'^([01]\d|2[0-3]):([0-5]\d)$')
+    max_callback_days: int = Field(default=7, ge=1, le=90)
+    sheets_sync_enabled: bool = False
+    sheets_spreadsheet_id: Optional[str] = Field(None, max_length=100)
+    sheets_sheet_name: str = Field(default="Calls", min_length=1, max_length=100)
+    sheets_auto_sync: bool = True
+
+    @field_validator('calling_window_end')
+    @classmethod
+    def validate_window(cls, v, info):
+        if 'calling_window_start' in info.data:
+            start = info.data['calling_window_start']
+            if v <= start:
+                raise ValueError('calling_window_end must be after calling_window_start')
+        if 'callback_window_start' in info.data and 'callback_window_end' in info.data:
+            cb_start = info.data['callback_window_start']
+            cb_end = info.data['callback_window_end']
+            if cb_end <= cb_start:
+                raise ValueError('callback_window_end must be after callback_window_start')
+        return v
+
+
+class CampaignCreate(CampaignBase):
+    pass
+
+
+class CampaignUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    description: Optional[str] = Field(None, max_length=500)
+    purpose: Optional[str] = Field(None, min_length=1, max_length=1000)
+    ai_instructions: Optional[str] = Field(None, min_length=1, max_length=10000)
+    opening_script: Optional[str] = Field(None, min_length=1, max_length=2000)
+    knowledge_base: Optional[str] = Field(None, max_length=20000)
+    voice_id: Optional[str] = Field(None, min_length=1, max_length=50)
+    language: Optional[str] = Field(None, pattern=r'^(en-IN|hi-IN|hinglish|en-US|en-GB)$')
+    supported_languages: Optional[List[str]] = None
+    max_calls_per_day: Optional[int] = Field(None, ge=1, le=10000)
+    max_retry_attempts: Optional[int] = Field(None, ge=0, le=10)
+    delay_between_calls: Optional[int] = Field(None, ge=0, le=3600)
+    calling_window_start: Optional[str] = Field(None, pattern=r'^([01]\d|2[0-3]):([0-5]\d)$')
+    calling_window_end: Optional[str] = Field(None, pattern=r'^([01]\d|2[0-3]):([0-5]\d)$')
+    calling_timezone: Optional[str] = Field(None, pattern=r'^[A-Za-z]+\/[A-Za-z_]+$')
+    skip_weekends: Optional[bool] = None
+    skip_holidays: Optional[bool] = None
+    allow_callbacks: Optional[bool] = None
+    callback_window_start: Optional[str] = Field(None, pattern=r'^([01]\d|2[0-3]):([0-5]\d)$')
+    callback_window_end: Optional[str] = Field(None, pattern=r'^([01]\d|2[0-3]):([0-5]\d)$')
+    max_callback_days: Optional[int] = Field(None, ge=1, le=90)
+    sheets_sync_enabled: Optional[bool] = None
+    sheets_spreadsheet_id: Optional[str] = Field(None, max_length=100)
+    sheets_sheet_name: Optional[str] = Field(None, min_length=1, max_length=100)
+    sheets_auto_sync: Optional[bool] = None
+    status: Optional[CampaignStatus] = None
+
+
+class CampaignResponse(CampaignBase):
+    id: UUID
+    status: CampaignStatus
+    started_at: Optional[datetime]
+    paused_at: Optional[datetime]
+    completed_at: Optional[datetime]
+    stopped_at: Optional[datetime]
+    total_customers: int
+    completed_calls: int
+    failed_calls: int
+    interested_count: int
+    callback_count: int
+    opt_out_count: int
+    organization_id: UUID
+    owner_id: UUID
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class CampaignValidate(BaseModel):
+    campaign_id: UUID
+
+
+class CampaignBulkAction(BaseModel):
+    campaign_ids: List[UUID] = Field(..., min_length=1, max_length=100)
+    action: str = Field(..., pattern=r'^(start|pause|stop|delete)$')
+
+
+class CampaignMetrics(BaseModel):
+    total_customers: int
+    total_calls: int
+    completed_calls: int
+    failed_calls: int
+    answered_calls: int
+    interested_count: int
+    callback_count: int
+    opt_out_count: int
+    average_duration: float
+    success_rate: float
+    answer_rate: float

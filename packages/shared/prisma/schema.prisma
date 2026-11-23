@@ -1,0 +1,598 @@
+// Prisma Schema for AI Voice Calling Automation Platform
+// Primary database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  AGENT
+  VIEWER
+}
+
+enum OrganizationPlan {
+  FREE
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum CampaignStatus {
+  DRAFT
+  READY
+  RUNNING
+  PAUSED
+  COMPLETED
+  STOPPED
+}
+
+enum CallStatus {
+  QUEUED
+  INITIATING
+  RINGING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  BUSY
+  NO_ANSWER
+  VOICEMAIL
+  INVALID_NUMBER
+  BLOCKED
+  CANCELLED
+}
+
+enum CallDirection {
+  OUTBOUND
+  INBOUND
+}
+
+enum CustomerStatus {
+  NEW
+  CONTACTED
+  HOT_LEAD
+  WARM_LEAD
+  COLD_LEAD
+  NOT_INTERESTED
+  CALLBACK_REQUESTED
+  DO_NOT_CALL
+  INVALID_NUMBER
+  OPTED_OUT
+}
+
+enum InterestLevel {
+  HOT
+  WARM
+  COLD
+  UNKNOWN
+}
+
+enum SyncStatus {
+  PENDING
+  SYNCED
+  FAILED
+  RETRYING
+}
+
+enum IntegrationType {
+  GOOGLE_SHEETS
+  GOOGLE_DRIVE
+  TWILIO
+  OPENAI
+  N8N
+}
+
+enum NotificationType {
+  CALL_COMPLETED
+  HOT_LEAD
+  CALLBACK_SCHEDULED
+  HUMAN_FOLLOWUP_REQUIRED
+  OPT_OUT
+  CAMPAIGN_COMPLETED
+  SYNC_FAILED
+  ERROR
+}
+
+enum ConsentStatus {
+  GRANTED
+  DENIED
+  PENDING
+  REVOKED
+}
+
+// ============================================
+// CORE MODELS
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  passwordHash  String?
+  avatarUrl     String?
+  role          UserRole  @default(VIEWER)
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  campaigns      Campaign[]         @relation("CampaignOwner")
+  calls          Call[]             @relation("CallAgent")
+  callbacks      Callback[]         @relation("CallbackAssignee")
+  notifications  Notification[]     @relation("NotificationUser")
+  auditLogs      AuditLog[]
+
+  @@index([organizationId])
+  @@index([email])
+}
+
+model Organization {
+  id              String           @id @default(cuid())
+  name            String
+  slug            String           @unique
+  logoUrl         String?
+  plan            OrganizationPlan @default(FREE)
+  planExpiresAt   DateTime?
+  settings        Json             @default("{}")
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  users           User[]
+  customers       Customer[]
+  campaigns       Campaign[]
+  integrations    Integration[]
+  suppressions    SuppressionList[]
+  consentRecords  ConsentRecord[]
+  auditLogs       AuditLog[]
+
+  @@index([slug])
+}
+
+model Customer {
+  id                String         @id @default(cuid())
+  externalId        String?        // For Google Sheets row ID or external CRM ID
+  firstName         String
+  lastName          String
+  email             String?
+  phone             String         // E.164 format
+  phoneRaw          String?        // Original format
+  company           String?
+  location          String?
+  language          String         @default("en-IN") // en-IN, hi-IN, hinglish
+  timezone          String         @default("Asia/Kolkata")
+  tags              String[]       @default([])
+  customFields      Json           @default("{}")
+
+  status            CustomerStatus @default(NEW)
+  interestLevel     InterestLevel  @default(UNKNOWN)
+  callAttempts      Int            @default(0)
+  maxCallAttempts   Int            @default(3)
+  lastCallAt        DateTime?
+  nextCallbackAt    DateTime?
+  lastCallStatus    CallStatus?
+  lastCallDuration  Int?           // seconds
+  finalDisposition  String?
+  doNotCall         Boolean        @default(false)
+  optedOutAt        DateTime?
+  optOutReason      String?
+
+  organizationId    String
+  organization      Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  campaignCustomers CampaignCustomer[]
+  calls             Call[]
+  callbacks         Callback[]
+  consentRecords    ConsentRecord[]
+  suppressions      SuppressionList[]
+
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@unique([organizationId, phone])
+  @@index([organizationId, status])
+  @@index([organizationId, phone])
+  @@index([organizationId, nextCallbackAt])
+  @@index([organizationId, interestLevel])
+}
+
+model Campaign {
+  id                  String         @id @default(cuid())
+  name                String
+  description         String?
+  purpose             String         // What the campaign is about
+
+  // AI Configuration
+  aiInstructions      String         // System prompt for the AI agent
+  openingScript       String         // Initial greeting script
+  knowledgeBase       String         // FAQ, product info, pricing, etc.
+  voiceId             String         @default("alloy") // OpenAI TTS voice
+  language            String         @default("en-IN")
+  supportedLanguages  String[]       @default(["en-IN", "hi-IN", "hinglish"])
+
+  // Calling Configuration
+  maxCallsPerDay      Int            @default(100)
+  maxRetryAttempts    Int            @default(3)
+  delayBetweenCalls   Int            @default(30) // seconds
+  callingWindowStart  String         @default("09:00") // HH:mm format
+  callingWindowEnd    String         @default("18:00") // HH:mm format
+  callingTimezone     String         @default("Asia/Kolkata")
+  skipWeekends        Boolean        @default(true)
+  skipHolidays        Boolean        @default(false)
+
+  // Callback Configuration
+  allowCallbacks      Boolean        @default(true)
+  callbackWindowStart String         @default("09:00")
+  callbackWindowEnd   String         @default("18:00")
+  maxCallbackDays     Int            @default(7)
+
+  // Google Sheets Integration
+  sheetsSyncEnabled   Boolean        @default(false)
+  sheetsSpreadsheetId String?
+  sheetsSheetName     String         @default("Calls")
+  sheetsAutoSync      Boolean        @default(true)
+
+  // Status & Tracking
+  status              CampaignStatus @default(DRAFT)
+  startedAt           DateTime?
+  pausedAt            DateTime?
+  completedAt         DateTime?
+  stoppedAt           DateTime?
+  totalCustomers      Int            @default(0)
+  completedCalls      Int            @default(0)
+  failedCalls         Int            @default(0)
+  interestedCount     Int            @default(0)
+  callbackCount       Int            @default(0)
+  optOutCount         Int            @default(0)
+
+  organizationId      String
+  organization        Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ownerId             String
+  owner               User           @relation("CampaignOwner", fields: [ownerId], references: [id])
+
+  campaignCustomers   CampaignCustomer[]
+  calls               Call[]
+  callbacks           Callback[]
+  integrations        Integration[]
+
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  @@index([organizationId, status])
+  @@index([ownerId])
+}
+
+model CampaignCustomer {
+  id            String      @id @default(cuid())
+  campaignId    String
+  campaign      Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  customerId    String
+  customer      Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  priority      Int         @default(0) // Higher = more priority
+  status        CustomerStatus @default(NEW)
+  assignedAt    DateTime    @default(now())
+  calledAt      DateTime?
+  completedAt   DateTime?
+
+  @@unique([campaignId, customerId])
+  @@index([campaignId, status])
+  @@index([customerId])
+}
+
+model Call {
+  id                String        @id @default(cuid())
+  callSid           String?       @unique // Twilio Call SID
+  direction         CallDirection @default(OUTBOUND)
+  status            CallStatus    @default(QUEUED)
+
+  // Participants
+  fromNumber        String        // Our Twilio number
+  toNumber          String        // Customer phone (E.164)
+
+  // Timing
+  queuedAt          DateTime      @default(now())
+  initiatedAt       DateTime?
+  answeredAt        DateTime?
+  endedAt           DateTime?
+  duration          Int?          // seconds
+  billableDuration  Int?          // seconds
+
+  // Results
+  disposition       String?       // COMPLETED, FAILED, BUSY, NO_ANSWER, VOICEMAIL
+  failureReason     String?
+  hangupSource      String?       // customer, ai, system, network
+
+  // AI Analysis
+  interestLevel     InterestLevel @default(UNKNOWN)
+  customerIntent    String?
+  objections        String[]      @default([])
+  questionsAsked    String[]      @default([])
+  summary           String?       // AI-generated summary
+  sentiment         String?       // positive, neutral, negative
+  requiresHumanFollowup Boolean   @default(false)
+  humanFollowupReason String?
+
+  // Recording & Transcript
+  recordingUrl      String?
+  recordingSid      String?
+  transcriptUrl     String?
+  transcriptText    String?
+  transcriptSegments Json?        @default("[]") // Detailed segments with timestamps
+
+  // Google Sheets Sync
+  sheetsSynced      Boolean       @default(false)
+  sheetsSyncAt      DateTime?
+  sheetsSyncStatus  SyncStatus    @default(PENDING)
+  sheetsSyncError   String?
+  sheetsRowIndex    Int?
+
+  // Relationships
+  campaignId        String
+  campaign          Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  customerId        String
+  customer          Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  agentId           String?
+  agent             User?         @relation("CallAgent", fields: [agentId], references: [id])
+
+  callbacks         Callback[]
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([campaignId, status])
+  @@index([customerId, status])
+  @@index([campaignId, createdAt])
+  @@index([callSid])
+  @@index([toNumber])
+  @@index([sheetsSyncStatus])
+}
+
+model CallTranscript {
+  id            String   @id @default(cuid())
+  callId        String   @unique
+  call          Call     @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  fullText      String   // Complete transcript
+  segments      Json     // Array of {speaker, text, startTime, endTime, confidence}
+  language      String   @default("en-IN")
+  wordCount     Int      @default(0)
+  duration      Float    // seconds
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model CallRecording {
+  id            String   @id @default(cuid())
+  callId        String   @unique
+  call          Call     @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  url           String   // Secure signed URL
+  provider      String   @default("twilio") // twilio, s3, gcs
+  providerId    String   // Recording SID or object key
+  format        String   @default("mp3") // mp3, wav
+  duration      Float    // seconds
+  sizeBytes     BigInt
+  channels      Int      @default(1)
+  sampleRate    Int      @default(8000)
+
+  // Google Drive sync
+  driveFileId   String?
+  driveSyncedAt DateTime?
+  driveSyncStatus SyncStatus @default(PENDING)
+
+  expiresAt     DateTime? // For signed URLs
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Callback {
+  id              String      @id @default(cuid())
+  status          String      @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELLED, FAILED, NO_ANSWER
+
+  // Scheduling
+  scheduledAt     DateTime
+  scheduledTimezone String    @default("Asia/Kolkata")
+  reminderSent    Boolean     @default(false)
+  reminderSentAt  DateTime?
+
+  // Source
+  sourceCallId    String?
+  sourceCall      Call?       @relation(fields: [sourceCallId], references: [id], onDelete: SetNull)
+  customerNotes   String?     // What customer requested
+  aiNotes         String?     // AI analysis of callback need
+
+  // Assignment
+  campaignId      String
+  campaign        Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  customerId      String
+  customer        Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  assigneeId      String?
+  assignee        User?       @relation("CallbackAssignee", fields: [assigneeId], references: [id])
+
+  // Result
+  resultCallId    String?
+  resultCall      Call?       @relation("CallbackResult", fields: [resultCallId], references: [id])
+  completedAt     DateTime?
+  outcome         String?
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([campaignId, status, scheduledAt])
+  @@index([customerId, status])
+  @@index([assigneeId, status])
+  @@index([scheduledAt])
+}
+
+model Integration {
+  id              String           @id @default(cuid())
+  type            IntegrationType
+  name            String
+  config          Json             @default("{}") // Encrypted credentials
+  isActive        Boolean          @default(true)
+  lastSyncAt      DateTime?
+  lastSyncStatus  SyncStatus       @default(PENDING)
+  lastSyncError   String?
+  syncLogs        SyncLog[]
+
+  organizationId  String
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaignId      String?
+  campaign        Campaign?        @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([organizationId, type, name])
+  @@index([organizationId, type])
+}
+
+model SyncLog {
+  id            String      @id @default(cuid())
+  integrationId String
+  integration   Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  operation     String      // SYNC_CUSTOMER, SYNC_CALL, SYNC_RECORDING
+  entityType    String      // Customer, Call, Recording
+  entityId      String
+  status        SyncStatus  @default(PENDING)
+  error         String?
+  requestData   Json?
+  responseData  Json?
+  retryCount    Int         @default(0)
+  completedAt   DateTime?
+
+  createdAt     DateTime    @default(now())
+
+  @@index([integrationId, createdAt])
+  @@index([entityType, entityId])
+  @@index([status])
+}
+
+model AutomationLog {
+  id            String   @id @default(cuid())
+  campaignId    String
+  campaign      Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  triggerType   String   // CALL_COMPLETED, CALLBACK_DUE, OPT_OUT, HOT_LEAD
+  triggerData   Json
+  actionType    String   // UPDATE_SHEETS, SCHEDULE_CALLBACK, NOTIFY_TEAM, ADD_TO_SUPPRESSION
+  actionData    Json
+  status        String   @default("PENDING") // PENDING, COMPLETED, FAILED
+  error         String?
+  completedAt   DateTime?
+
+  createdAt     DateTime @default(now())
+
+  @@index([campaignId, createdAt])
+  @@index([triggerType, status])
+}
+
+model SuppressionList {
+  id            String   @id @default(cuid())
+  phone         String   // E.164 format
+  reason        String   // OPT_OUT, DND, INVALID, MANUAL
+  source        String   // CAMPAIGN, MANUAL, IMPORT, WEBHOOK
+  campaignId    String?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customerId     String?
+  customer       Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  expiresAt      DateTime?   // Null = permanent
+  isActive       Boolean     @default(true)
+  addedBy        String?     // User ID or 'system'
+
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@unique([organizationId, phone])
+  @@index([organizationId, isActive])
+  @@index([phone])
+}
+
+model ConsentRecord {
+  id            String        @id @default(cuid())
+  phone         String        // E.164 format
+  status        ConsentStatus @default(PENDING)
+  method        String        // VERBAL, SMS, EMAIL, WEB_FORM, CALL_RECORDING
+  proofUrl      String?       // Recording or document URL
+  proofExpiresAt DateTime?
+
+  campaignId    String?
+  campaign      Campaign?     @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  customerId    String?
+  customer      Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  grantedAt     DateTime?
+  revokedAt     DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([organizationId, phone])
+  @@index([organizationId, status])
+}
+
+model Notification {
+  id            String            @id @default(cuid())
+  type          NotificationType
+  title         String
+  message       String
+  data          Json              @default("{}")
+  isRead        Boolean           @default(false)
+  readAt        DateTime?
+
+  userId        String
+  user          User              @relation("NotificationUser", fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaignId    String?
+  campaign      Campaign?         @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  callId        String?
+  call          Call?             @relation(fields: [callId], references: [id], onDelete: SetNull)
+
+  createdAt     DateTime          @default(now())
+
+  @@index([userId, isRead, createdAt])
+  @@index([organizationId, createdAt])
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  action        String   // CREATE, UPDATE, DELETE, CALL_START, CALL_END, SYNC, EXPORT
+  entityType    String   // User, Campaign, Customer, Call, Integration
+  entityId      String
+  oldData       Json?
+  newData       Json?
+  metadata      Json     @default("{}") // IP, user agent, etc.
+
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([entityType, entityId])
+  @@index([userId, createdAt])
+}
