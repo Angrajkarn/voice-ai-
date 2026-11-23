@@ -19,6 +19,9 @@ jobs:
   lint:
     name: Lint & Type Check
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -28,15 +31,16 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
 
       - name: Install frontend dependencies
-        run: cd apps/web && npm ci
+        run: npm ci
 
       - name: Run frontend lint
-        run: cd apps/web && npm run lint
+        run: npm run lint
 
       - name: Run frontend typecheck
-        run: cd apps/web && npm run typecheck
+        run: npm run typecheck
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -67,6 +71,9 @@ jobs:
   test-frontend:
     name: Frontend Tests
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -76,15 +83,16 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
 
       - name: Install dependencies
-        run: cd apps/web && npm ci
+        run: npm ci
 
       - name: Generate Prisma client
-        run: cd apps/web && npx prisma generate
+        run: npx prisma generate
 
       - name: Run tests
-        run: cd apps/web && npm run test
+        run: npm run test
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
@@ -98,6 +106,9 @@ jobs:
   test-backend:
     name: Backend Tests
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
     services:
       postgres:
         image: postgres:16-alpine
@@ -139,7 +150,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd apps/api
           pip install -r requirements.txt
           pip install pytest pytest-asyncio httpx pytest-cov
 
@@ -151,12 +161,10 @@ jobs:
 
       - name: Run database migrations
         run: |
-          cd apps/api
           DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/voiceai_test alembic upgrade head
 
       - name: Run tests
         run: |
-          cd apps/api
           DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/voiceai_test \
           pytest -v --cov=app --cov-report=xml --cov-report=term-missing
 
