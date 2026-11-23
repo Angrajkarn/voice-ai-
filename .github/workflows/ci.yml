@@ -129,6 +129,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install redis-cli
+        run: sudo apt-get update && sudo apt-get install -y redis-tools
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -146,7 +149,7 @@ jobs:
         run: |
           sleep 5
           pg_isready -h localhost -p 5432 -U postgres
-          redis-cli ping
+          redis-cli -h localhost ping
 
       - name: Run database migrations
         run: |
@@ -285,6 +288,9 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
