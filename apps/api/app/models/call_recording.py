@@ -1,6 +1,6 @@
 # CallRecording model
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Text, JSON, Integer, Index
+from sqlalchemy import Column, String, DateTime, ForeignKey, Text, JSON, Integer, Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.models.base import BaseModel
