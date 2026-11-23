@@ -1,7 +1,7 @@
 # Core configuration for AI Voice Calling Platform API
 
 from pydantic_settings import BaseSettings
-from typing: List, Optional
+from typing import List, Optional
 import os
 
 
