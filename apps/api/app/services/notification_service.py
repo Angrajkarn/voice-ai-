@@ -1,13 +1,12 @@
 # Notification Service - Handles user notifications
 
-from sqlalchemy import select, and_, func
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Optional
 from datetime import datetime
 from uuid import UUID
 
-from app.models.notification import Notification
 from app.models.enums import NotificationType
+from app.models.notification import Notification
+from sqlalchemy import and_, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class NotificationService:
@@ -21,9 +20,9 @@ class NotificationService:
         notification_type: NotificationType,
         title: str,
         message: str,
-        data: Optional[dict] = None,
-        campaign_id: Optional[UUID] = None,
-        call_id: Optional[UUID] = None,
+        data: dict | None = None,
+        campaign_id: UUID | None = None,
+        call_id: UUID | None = None,
     ) -> Notification:
         notification = Notification(
             user_id=user_id,
@@ -43,8 +42,8 @@ class NotificationService:
     async def create_hot_lead_notification(self, call) -> Notification:
         """Create notification for hot lead"""
         # Get campaign owner/managers
-        from app.models.user import User
         from app.models.enums import UserRole
+        from app.models.user import User
 
         managers = await self.db.execute(
             select(User).where(
@@ -96,8 +95,8 @@ class NotificationService:
 
     async def create_human_followup_notification(self, call) -> Notification:
         """Create notification for human follow-up required"""
-        from app.models.user import User
         from app.models.enums import UserRole
+        from app.models.user import User
 
         managers = await self.db.execute(
             select(User).where(
@@ -135,7 +134,7 @@ class NotificationService:
         page: int = 1,
         page_size: int = 20,
         unread_only: bool = False,
-    ) -> tuple[List[Notification], int]:
+    ) -> tuple[list[Notification], int]:
         query = select(Notification).where(Notification.user_id == user_id)
 
         if unread_only:
@@ -152,7 +151,7 @@ class NotificationService:
 
         return list(notifications), total
 
-    async def mark_read(self, notification_id: UUID, user_id: UUID) -> Optional[Notification]:
+    async def mark_read(self, notification_id: UUID, user_id: UUID) -> Notification | None:
         notification = await self.db.scalar(
             select(Notification).where(
                 and_(

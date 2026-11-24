@@ -1,11 +1,12 @@
 # CampaignCustomer model (junction table)
 
-from sqlalchemy import Column, DateTime, ForeignKey, Enum as SQLEnum, Integer, Index, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+
 from app.models.base import BaseModel
 from app.models.enums import CustomerStatus
-import uuid
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, UniqueConstraint
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 
 
 class CampaignCustomer(BaseModel):

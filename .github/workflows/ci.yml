@@ -32,7 +32,7 @@ jobs:
         run: cd apps/web && npm install --legacy-peer-deps
 
       - name: Run frontend lint
-        run: cd apps/web && npx next lint --dir . --no-interactive
+        run: cd apps/web && npx next lint --dir .
 
       - name: Run frontend typecheck
         run: cd apps/web && npm run typecheck

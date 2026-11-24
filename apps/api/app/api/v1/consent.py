@@ -1,16 +1,15 @@
 # Consent Records API routes
 
+from datetime import datetime
+from uuid import UUID
+
+from app.core.dependencies import get_current_organization, get_current_user
+from app.db.session import get_db
+from app.models.organization import Organization
+from app.models.user import User
+from app.services.consent_service import ConsentService
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing: Optional
-from uuid import UUID
-from datetime import datetime
-
-from app.db.session import get_db
-from app.services.consent_service import ConsentService
-from app.core.dependencies import get_current_user, get_current_organization
-from app.models.user import User
-from app.models.organization import Organization
 
 router = APIRouter(prefix="/consent", tags=["consent"])
 
@@ -19,7 +18,7 @@ router = APIRouter(prefix="/consent", tags=["consent"])
 async def list_consents(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    status: Optional[str] = None,
+    status: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     organization: Organization = Depends(get_current_organization),
@@ -52,10 +51,10 @@ async def record_consent(
     phone: str,
     status: str,
     method: str,
-    campaign_id: Optional[UUID] = None,
-    customer_id: Optional[UUID] = None,
-    proof_url: Optional[str] = None,
-    proof_expires_at: Optional[str] = None,
+    campaign_id: UUID | None = None,
+    customer_id: UUID | None = None,
+    proof_url: str | None = None,
+    proof_expires_at: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     organization: Organization = Depends(get_current_organization),

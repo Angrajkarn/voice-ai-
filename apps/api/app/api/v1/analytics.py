@@ -1,18 +1,21 @@
 # Analytics API routes
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing: Optional
-from uuid import UUID
 from datetime import date
-from fastapi.responses import Response
+from uuid import UUID
 
+from app.core.dependencies import get_current_organization, get_current_user
 from app.db.session import get_db
-from app.schemas.analytics import DashboardMetrics, CampaignAnalytics, OrganizationAnalytics, AnalyticsExportRequest
-from app.services.analytics_service import AnalyticsService
-from app.core.dependencies import get_current_user, get_current_organization
-from app.models.user import User
 from app.models.organization import Organization
+from app.models.user import User
+from app.schemas.analytics import (
+    CampaignAnalytics,
+    DashboardMetrics,
+    OrganizationAnalytics,
+)
+from app.services.analytics_service import AnalyticsService
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -58,9 +61,9 @@ async def get_organization_analytics(
 @router.get("/export/{report_type}")
 async def export_report(
     report_type: str,
-    campaign_id: Optional[UUID] = None,
-    date_from: Optional[date] = None,
-    date_to: Optional[date] = None,
+    campaign_id: UUID | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
     format: str = Query("csv", pattern="^(csv|xlsx)$"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),

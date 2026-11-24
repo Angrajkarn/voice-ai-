@@ -1,18 +1,16 @@
 # Google Drive Service - Handles Google Drive API integration for recordings
 
-from typing import Optional, Dict, Any
-from datetime import datetime
-from uuid import UUID
-import json
 import io
+import json
+from datetime import datetime
+
+from app.core.config import settings
+from app.models.call_recording import CallRecording
+from app.models.enums import SyncStatus
+from app.models.integration import Integration
+from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
-from google.oauth2.service_account import Credentials
-
-from app.models.call_recording import CallRecording
-from app.models.integration import Integration
-from app.models.enums import IntegrationType, SyncStatus
-from app.core.config import settings
 
 
 class GoogleDriveService:
@@ -42,7 +40,7 @@ class GoogleDriveService:
         recording: CallRecording,
         audio_data: bytes,
         integration: Integration,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Upload call recording to Google Drive"""
         try:
             client = await self._get_client(integration)
@@ -82,12 +80,12 @@ class GoogleDriveService:
 
             return file.get("id")
 
-        except Exception as e:
+        except Exception:
             recording.drive_sync_status = SyncStatus.FAILED
             await self.db.commit()
             return None
 
-    async def create_folder_structure(self, integration: Integration, campaign_name: str) -> Optional[str]:
+    async def create_folder_structure(self, integration: Integration, campaign_name: str) -> str | None:
         """Create folder structure for campaign recordings"""
         try:
             client = await self._get_client(integration)
@@ -112,7 +110,7 @@ class GoogleDriveService:
         except Exception:
             return False
 
-    async def get_recording_url(self, drive_file_id: str, integration: Integration) -> Optional[str]:
+    async def get_recording_url(self, drive_file_id: str, integration: Integration) -> str | None:
         """Get shareable link for recording"""
         try:
             client = await self._get_client(integration)

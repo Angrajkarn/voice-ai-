@@ -1,19 +1,21 @@
 # Google Sheets Service - Handles Google Sheets API integration
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-from uuid import UUID
 import json
+from datetime import datetime, timezone
+from typing import Any
+from uuid import UUID
+
 import gspread
+from app.core.config import settings
+from app.models.call import Call
+from app.models.campaign import Campaign
+from app.models.customer import Customer
+from app.models.enums import IntegrationType, SyncStatus
+from app.models.integration import Integration
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
-
-from app.models.campaign import Campaign
-from app.models.call import Call
-from app.models.customer import Customer
-from app.models.integration import Integration
-from app.models.enums import IntegrationType, SyncStatus
-from app.core.config import settings
+from sqlalchemy import and_, select
+from sqlalchemy.orm import selectinload
 
 
 class GoogleSheetsService:
@@ -88,7 +90,7 @@ class GoogleSheetsService:
             if call.sheets_row_index:
                 try:
                     worksheet.update(f"A{call.sheets_row_index}:P{call.sheets_row_index}", [row_data])
-                except Exception:
+                except gspread.exceptions.GSpreadException:
                     # Row might be deleted, append new
                     call.sheets_row_index = None
 
@@ -101,7 +103,7 @@ class GoogleSheetsService:
 
             # Update call record
             call.sheets_synced = True
-            call.sheets_sync_at = datetime.utcnow()
+            call.sheets_sync_at = datetime.now(timezone.utc)
             call.sheets_sync_status = SyncStatus.SYNCED
             call.sheets_sync_error = None
             await self.db.commit()
@@ -111,7 +113,7 @@ class GoogleSheetsService:
 
             return True
 
-        except Exception as e:
+        except gspread.exceptions.GSpreadException as e:
             call.sheets_sync_status = SyncStatus.FAILED
             call.sheets_sync_error = str(e)
             await self.db.commit()
@@ -126,7 +128,7 @@ class GoogleSheetsService:
         # This could be used to maintain a customer reference sheet
         return True
 
-    async def sync_campaign_customers(self, campaign: Campaign) -> Dict[str, Any]:
+    async def sync_campaign_customers(self, campaign: Campaign) -> dict[str, Any]:
         """Sync all campaign customers to Google Sheets"""
         integration = await self.db.scalar(
             select(Integration).where(
@@ -190,10 +192,10 @@ class GoogleSheetsService:
 
             return {"success": True, "synced": len(rows)}
 
-        except Exception as e:
+        except gspread.exceptions.GSpreadException as e:
             return {"success": False, "error": str(e)}
 
-    def _prepare_call_row(self, call: Call) -> List[str]:
+    def _prepare_call_row(self, call: Call) -> list[str]:
         """Prepare call data for Google Sheets row"""
         customer = call.customer
         return [
@@ -213,7 +215,7 @@ class GoogleSheetsService:
             call.disposition or "",                    # Final Outcome
             call.recording_url or "",                  # Recording URL
             str(call.customer.call_attempts),          # Attempts
-            datetime.utcnow().isoformat(),             # Last Updated
+            datetime.now(timezone.utc).isoformat(),             # Last Updated
         ]
 
     async def create_spreadsheet_structure(self, integration: Integration, campaign: Campaign) -> bool:
@@ -275,7 +277,7 @@ class GoogleSheetsService:
 
             return True
 
-        except Exception as e:
+        except gspread.exceptions.GSpreadException:
             return False
 
     async def update_summary_sheet(self, campaign: Campaign) -> bool:
@@ -324,7 +326,7 @@ class GoogleSheetsService:
             summary_sheet.append_rows(summary_data, value_input_option="USER_ENTERED")
 
             return True
-        except Exception:
+        except gspread.exceptions.GSpreadException:
             return False
 
     async def _log_sync(
@@ -334,7 +336,7 @@ class GoogleSheetsService:
         entity_type: str,
         entity_id: str,
         status: SyncStatus,
-        error: Optional[str] = None,
+        error: str | None = None,
     ):
         """Log sync operation"""
         from app.models.sync_log import SyncLog

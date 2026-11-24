@@ -1,8 +1,9 @@
 # Webhook schemas for Twilio and other providers
 
-from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
 from datetime import datetime
+from typing import Any
+
+from pydantic import BaseModel
 
 
 class TwilioVoiceWebhook(BaseModel):
@@ -16,31 +17,31 @@ class TwilioVoiceWebhook(BaseModel):
     ApiVersion: str
 
     # Optional fields
-    ParentCallSid: Optional[str] = None
-    FromFormatted: Optional[str] = None
-    ToFormatted: Optional[str] = None
-    CallerName: Optional[str] = None
-    ForwardedFrom: Optional[str] = None
-    ForwardedFromFormatted: Optional[str] = None
+    ParentCallSid: str | None = None
+    FromFormatted: str | None = None
+    ToFormatted: str | None = None
+    CallerName: str | None = None
+    ForwardedFrom: str | None = None
+    ForwardedFromFormatted: str | None = None
 
     # For Gather/Twiml
-    Digits: Optional[str] = None
-    SpeechResult: Optional[str] = None
-    Confidence: Optional[str] = None
-    RecognitionStatus: Optional[str] = None
+    Digits: str | None = None
+    SpeechResult: str | None = None
+    Confidence: str | None = None
+    RecognitionStatus: str | None = None
 
     # Recording
-    RecordingUrl: Optional[str] = None
-    RecordingSid: Optional[str] = None
-    RecordingDuration: Optional[str] = None
-    RecordingChannels: Optional[str] = None
-    RecordingSource: Optional[str] = None
-    RecordingStatus: Optional[str] = None
+    RecordingUrl: str | None = None
+    RecordingSid: str | None = None
+    RecordingDuration: str | None = None
+    RecordingChannels: str | None = None
+    RecordingSource: str | None = None
+    RecordingStatus: str | None = None
 
     # Transcription
-    TranscriptionText: Optional[str] = None
-    TranscriptionSid: Optional[str] = None
-    TranscriptionStatus: Optional[str] = None
+    TranscriptionText: str | None = None
+    TranscriptionSid: str | None = None
+    TranscriptionStatus: str | None = None
 
 
 class TwilioStatusWebhook(BaseModel):
@@ -51,10 +52,10 @@ class TwilioStatusWebhook(BaseModel):
     Direction: str
     From: str
     To: str
-    CallDuration: Optional[str] = None
-    SipResponseCode: Optional[str] = None
-    ErrorCode: Optional[str] = None
-    ErrorMessage: Optional[str] = None
+    CallDuration: str | None = None
+    SipResponseCode: str | None = None
+    ErrorCode: str | None = None
+    ErrorMessage: str | None = None
 
 
 class TwilioRecordingWebhook(BaseModel):
@@ -91,5 +92,5 @@ class GoogleSheetsWebhook(BaseModel):
 class N8NCallbackWebhook(BaseModel):
     workflowId: str
     executionId: str
-    data: Dict[str, Any]
+    data: dict[str, Any]
     timestamp: datetime

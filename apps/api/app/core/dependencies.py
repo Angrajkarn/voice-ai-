@@ -1,22 +1,21 @@
 # Core dependencies for FastAPI
 
-from fastapi import Depends, HTTPException, status, Header
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from typing: Optional
-from uuid import UUID
-from jose import jwt, JWTError
 from datetime import datetime, timedelta
+from uuid import UUID
 
-from app.db.session import get_db
 from app.core.config import settings
-from app.models.user import User
-from app.models.organization import Organization
+from app.db.session import get_db
 from app.models.enums import UserRole
-
+from app.models.organization import Organization
+from app.models.user import User
+from fastapi import Depends, HTTPException, status
 
 # OAuth2 scheme for token authentication
 from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
@@ -63,9 +62,9 @@ async def get_current_organization(
 
 
 async def get_optional_user(
-    token: Optional[str] = Depends(oauth2_scheme),
+    token: str | None = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db),
-) -> Optional[User]:
+) -> User | None:
     """Get current user if token provided, otherwise None"""
     if not token:
         return None
@@ -93,7 +92,7 @@ require_manager = require_role(UserRole.MANAGER, UserRole.ADMIN, UserRole.SUPER_
 require_agent = require_role(UserRole.AGENT, UserRole.MANAGER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     """Create JWT access token"""
     to_encode = data.copy()
     if expires_delta:

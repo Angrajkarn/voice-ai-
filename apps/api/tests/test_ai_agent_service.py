@@ -1,13 +1,12 @@
 # AI Agent service tests
 
-import pytest
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
-from unittest.mock import AsyncMock, patch, MagicMock
 
-from app.services.ai_agent_service import AIAgentService
+import pytest
 from app.models.campaign import Campaign
 from app.models.customer import Customer
-from app.models.enums import InterestLevel
+from app.services.ai_agent_service import AIAgentService
 
 
 @pytest.fixture
@@ -18,7 +17,7 @@ def sample_campaign():
         name="Test Campaign",
         purpose="Test product launch",
         ai_instructions="You are a helpful AI assistant.",
-        opening_script="Hello {firstName}, this is a test call.",
+        opening_script="Hello {firstName}, this is a test call from {company} in {location}.",
         knowledge_base="Test product info.",
         voice_id="alloy",
         language="en-IN",

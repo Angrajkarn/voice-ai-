@@ -1,17 +1,17 @@
 # Call API routes
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing: List, Optional
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
 
+from app.core.dependencies import get_current_organization, get_current_user
 from app.db.session import get_db
-from app.schemas.call import CallCreate, CallUpdate, CallResponse
-from app.services.call_service import CallService
-from app.core.dependencies import get_current_user, get_current_organization
-from app.models.user import User
 from app.models.organization import Organization
+from app.models.user import User
+from app.schemas.call import CallCreate, CallResponse
+from app.services.call_service import CallService
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/calls", tags=["calls"])
 
@@ -20,13 +20,13 @@ router = APIRouter(prefix="/calls", tags=["calls"])
 async def list_calls(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    campaign_id: Optional[UUID] = None,
-    customer_id: Optional[UUID] = None,
-    status: Optional[str] = None,
-    direction: Optional[str] = None,
-    interest_level: Optional[str] = None,
-    date_from: Optional[datetime] = None,
-    date_to: Optional[datetime] = None,
+    campaign_id: UUID | None = None,
+    customer_id: UUID | None = None,
+    status: str | None = None,
+    direction: str | None = None,
+    interest_level: str | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     organization: Organization = Depends(get_current_organization),
@@ -114,7 +114,7 @@ async def get_call_recording(
     return {"url": recording.url, "expires_at": recording.expires_at}
 
 
-@router.get("/campaign/{campaign_id}/live", response_model=List[CallResponse])
+@router.get("/campaign/{campaign_id}/live", response_model=list[CallResponse])
 async def get_live_calls(
     campaign_id: UUID,
     db: AsyncSession = Depends(get_db),

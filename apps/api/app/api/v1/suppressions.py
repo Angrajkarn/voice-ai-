@@ -1,16 +1,15 @@
 # Suppression List API routes
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing: Optional
 from uuid import UUID
-from fastapi.responses import Response
 
+from app.core.dependencies import get_current_organization, get_current_user
 from app.db.session import get_db
-from app.services.suppression_service import SuppressionService
-from app.core.dependencies import get_current_user, get_current_organization
-from app.models.user import User
 from app.models.organization import Organization
+from app.models.user import User
+from app.services.suppression_service import SuppressionService
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi.responses import Response
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/suppressions", tags=["suppressions"])
 
@@ -53,8 +52,8 @@ async def check_suppression(
 async def add_suppression(
     phone: str,
     reason: str = "MANUAL",
-    campaign_id: Optional[UUID] = None,
-    expires_at: Optional[str] = None,
+    campaign_id: UUID | None = None,
+    expires_at: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     organization: Organization = Depends(get_current_organization),

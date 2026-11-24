@@ -1,15 +1,13 @@
 # Maintenance tasks
 
-from celery import shared_task
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import select, and_, delete
-from uuid import UUID
-from datetime import datetime, timedelta
 import asyncio
+from datetime import datetime, timedelta
 
 from app.core.config import settings
-
+from celery import shared_task
+from sqlalchemy import and_, delete, select
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
 
 engine = create_async_engine(settings.DATABASE_URL, pool_pre_ping=True)
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -20,12 +18,12 @@ def cleanup_old_data():
     """Clean up old data based on retention policies"""
     async def _cleanup():
         async with AsyncSessionLocal() as db:
-            from app.models.call import Call
             from app.models.audit_log import AuditLog
-            from app.models.sync_log import SyncLog
             from app.models.automation_log import AutomationLog
-            from app.models.notification import Notification
+            from app.models.call import Call
             from app.models.enums import CallStatus
+            from app.models.notification import Notification
+            from app.models.sync_log import SyncLog
 
             cutoff_30_days = datetime.utcnow() - timedelta(days=30)
             cutoff_90_days = datetime.utcnow() - timedelta(days=90)
@@ -113,8 +111,8 @@ def check_integration_health():
     """Check health of all active integrations"""
     async def _check():
         async with AsyncSessionLocal() as db:
+            from app.models.enums import SyncStatus
             from app.models.integration import Integration
-            from app.models.enums import IntegrationType, SyncStatus
             from app.services.integration_service import IntegrationService
 
             integrations = await db.execute(
@@ -147,11 +145,16 @@ def update_campaign_statistics():
     """Update campaign statistics counters"""
     async def _update():
         async with AsyncSessionLocal() as db:
-            from app.models.campaign import Campaign
             from app.models.call import Call
             from app.models.callback import Callback
+            from app.models.campaign import Campaign
             from app.models.customer import Customer
-            from app.models.enums import CallStatus, InterestLevel, CustomerStatus, CallbackStatus
+            from app.models.enums import (
+                CallbackStatus,
+                CallStatus,
+                CustomerStatus,
+                InterestLevel,
+            )
             from sqlalchemy import func, select
 
             campaigns = await db.execute(select(Campaign))

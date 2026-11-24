@@ -1,23 +1,23 @@
 # Call Service
 
-from sqlalchemy import select, func, and_, or_, update
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta
+import builtins
+from datetime import datetime
 from uuid import UUID
 
 from app.models.call import Call
-from app.models.call_transcript import CallTranscript
 from app.models.call_recording import CallRecording
-from app.models.callback import Callback
-from app.models.campaign import Campaign
-from app.models.customer import Customer
-from app.models.enums import CallStatus, CallDirection, InterestLevel, SyncStatus, CallbackStatus
+from app.models.call_transcript import CallTranscript
+from app.models.enums import (
+    CallDirection,
+    CallStatus,
+    InterestLevel,
+)
 from app.schemas.call import CallCreate, CallUpdate
 from app.schemas.callback import CallbackCreate
 from app.services.twilio_service import TwilioService
-from app.core.config import settings
+from sqlalchemy import and_, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 
 class CallService:
@@ -35,7 +35,7 @@ class CallService:
         await self.db.refresh(call)
         return call
 
-    async def get_by_id(self, call_id: UUID) -> Optional[Call]:
+    async def get_by_id(self, call_id: UUID) -> Call | None:
         result = await self.db.execute(
             select(Call)
             .options(
@@ -53,14 +53,14 @@ class CallService:
         self,
         page: int = 1,
         page_size: int = 20,
-        campaign_id: Optional[UUID] = None,
-        customer_id: Optional[UUID] = None,
-        status: Optional[str] = None,
-        direction: Optional[str] = None,
-        interest_level: Optional[str] = None,
-        date_from: Optional[datetime] = None,
-        date_to: Optional[datetime] = None,
-    ) -> tuple[List[Call], int]:
+        campaign_id: UUID | None = None,
+        customer_id: UUID | None = None,
+        status: str | None = None,
+        direction: str | None = None,
+        interest_level: str | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
+    ) -> tuple[list[Call], int]:
         query = select(Call)
 
         if campaign_id:
@@ -97,7 +97,7 @@ class CallService:
 
         return list(calls), total
 
-    async def update(self, call_id: UUID, data: CallUpdate) -> Optional[Call]:
+    async def update(self, call_id: UUID, data: CallUpdate) -> Call | None:
         call = await self.get_by_id(call_id)
         if not call:
             return None
@@ -110,7 +110,7 @@ class CallService:
         await self.db.refresh(call)
         return call
 
-    async def get_next_queued_call(self, campaign_id: UUID) -> Optional[Call]:
+    async def get_next_queued_call(self, campaign_id: UUID) -> Call | None:
         """Get the next call to process for a campaign"""
         result = await self.db.execute(
             select(Call)
@@ -138,8 +138,8 @@ class CallService:
             await self.db.commit()
 
             # Get Twilio config from campaign integrations
-            from app.models.integration import Integration
             from app.models.enums import IntegrationType
+            from app.models.integration import Integration
 
             integration = await self.db.scalar(
                 select(Integration).where(
@@ -183,7 +183,7 @@ class CallService:
             await self.db.commit()
             return False
 
-    async def handle_twilio_status(self, call_sid: str, status: str, duration: Optional[str] = None) -> Optional[Call]:
+    async def handle_twilio_status(self, call_sid: str, status: str, duration: str | None = None) -> Call | None:
         """Handle Twilio status callback"""
         call = await self.db.scalar(select(Call).where(Call.call_sid == call_sid))
         if not call:
@@ -230,7 +230,7 @@ class CallService:
 
         return call
 
-    async def handle_recording(self, call_sid: str, recording_sid: str, recording_url: str, duration: str) -> Optional[CallRecording]:
+    async def handle_recording(self, call_sid: str, recording_sid: str, recording_url: str, duration: str) -> CallRecording | None:
         """Handle recording callback"""
         call = await self.db.scalar(select(Call).where(Call.call_sid == call_sid))
         if not call:
@@ -258,7 +258,7 @@ class CallService:
 
         return recording
 
-    async def handle_transcription(self, call_sid: str, transcription_sid: str, transcription_text: str) -> Optional[CallTranscript]:
+    async def handle_transcription(self, call_sid: str, transcription_sid: str, transcription_text: str) -> CallTranscript | None:
         """Handle transcription callback"""
         call = await self.db.scalar(select(Call).where(Call.call_sid == call_sid))
         if not call:
@@ -287,8 +287,8 @@ class CallService:
         """Trigger post-call automation workflows"""
         from app.models.automation_log import AutomationLog
         from app.services.ai_agent_service import AIAgentService
-        from app.services.google_sheets_service import GoogleSheetsService
         from app.services.callback_service import CallbackService
+        from app.services.google_sheets_service import GoogleSheetsService
         from app.services.notification_service import NotificationService
         from app.services.suppression_service import SuppressionService
 
@@ -431,7 +431,7 @@ class CallService:
         await self.db.commit()
         return retried
 
-    async def get_live_calls(self, campaign_id: UUID) -> List[Call]:
+    async def get_live_calls(self, campaign_id: UUID) -> builtins.list[Call]:
         """Get currently active calls for a campaign"""
         result = await self.db.execute(
             select(Call)

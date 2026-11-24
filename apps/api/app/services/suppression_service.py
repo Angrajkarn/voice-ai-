@@ -1,17 +1,14 @@
 # Suppression Service - Manages Do Not Call / Suppression lists
 
-from sqlalchemy import select, and_, or_
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Optional
-from datetime import datetime
-from uuid import UUID
 import csv
 import io
+from datetime import datetime
+from uuid import UUID
 
-from app.models.suppression_list import SuppressionList
-from app.models.customer import Customer
 from app.models.enums import SuppressionReason, SuppressionSource
-from app.core.config import settings
+from app.models.suppression_list import SuppressionList
+from sqlalchemy import and_, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class SuppressionService:
@@ -23,9 +20,9 @@ class SuppressionService:
         phone: str,
         reason: str,
         organization_id: UUID,
-        customer_id: Optional[UUID] = None,
-        campaign_id: Optional[UUID] = None,
-        expires_at: Optional[datetime] = None,
+        customer_id: UUID | None = None,
+        campaign_id: UUID | None = None,
+        expires_at: datetime | None = None,
         added_by: str = "system",
     ) -> SuppressionList:
         # Normalize phone
@@ -108,7 +105,7 @@ class SuppressionService:
         page: int = 1,
         page_size: int = 20,
         active_only: bool = True,
-    ) -> tuple[List[SuppressionList], int]:
+    ) -> tuple[list[SuppressionList], int]:
         query = select(SuppressionList).where(SuppressionList.organization_id == organization_id)
 
         if active_only:

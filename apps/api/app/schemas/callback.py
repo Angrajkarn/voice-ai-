@@ -1,52 +1,52 @@
 # Callback schemas
 
-from pydantic import BaseModel, Field
-from typing import Optional
 from datetime import datetime
 from uuid import UUID
+
 from app.models.enums import CallbackStatus
+from pydantic import BaseModel, Field
 
 
 class CallbackBase(BaseModel):
     status: CallbackStatus = CallbackStatus.SCHEDULED
     scheduled_at: datetime
     scheduled_timezone: str = Field(default="Asia/Kolkata", pattern=r'^[A-Za-z]+\/[A-Za-z_]+$')
-    customer_notes: Optional[str] = None
-    ai_notes: Optional[str] = None
+    customer_notes: str | None = None
+    ai_notes: str | None = None
 
 
 class CallbackCreate(CallbackBase):
     campaign_id: UUID
     customer_id: UUID
-    source_call_id: Optional[UUID] = None
-    assignee_id: Optional[UUID] = None
+    source_call_id: UUID | None = None
+    assignee_id: UUID | None = None
 
 
 class CallbackUpdate(BaseModel):
-    status: Optional[CallbackStatus] = None
-    scheduled_at: Optional[datetime] = None
-    scheduled_timezone: Optional[str] = Field(None, pattern=r'^[A-Za-z]+\/[A-Za-z_]+$')
-    reminder_sent: Optional[bool] = None
-    reminder_sent_at: Optional[datetime] = None
-    customer_notes: Optional[str] = None
-    ai_notes: Optional[str] = None
-    assignee_id: Optional[UUID] = None
-    result_call_id: Optional[UUID] = None
-    completed_at: Optional[datetime] = None
-    outcome: Optional[str] = Field(None, max_length=500)
+    status: CallbackStatus | None = None
+    scheduled_at: datetime | None = None
+    scheduled_timezone: str | None = Field(None, pattern=r'^[A-Za-z]+\/[A-Za-z_]+$')
+    reminder_sent: bool | None = None
+    reminder_sent_at: datetime | None = None
+    customer_notes: str | None = None
+    ai_notes: str | None = None
+    assignee_id: UUID | None = None
+    result_call_id: UUID | None = None
+    completed_at: datetime | None = None
+    outcome: str | None = Field(None, max_length=500)
 
 
 class CallbackResponse(CallbackBase):
     id: UUID
     reminder_sent: bool
-    reminder_sent_at: Optional[datetime]
-    source_call_id: Optional[UUID]
+    reminder_sent_at: datetime | None
+    source_call_id: UUID | None
     campaign_id: UUID
     customer_id: UUID
-    assignee_id: Optional[UUID]
-    result_call_id: Optional[UUID]
-    completed_at: Optional[datetime]
-    outcome: Optional[str]
+    assignee_id: UUID | None
+    result_call_id: UUID | None
+    completed_at: datetime | None
+    outcome: str | None
     created_at: datetime
     updated_at: datetime
 

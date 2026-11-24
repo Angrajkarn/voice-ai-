@@ -1,13 +1,12 @@
 # Consent Service - Manages consent records
 
-from sqlalchemy import select, and_, or_
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Optional
 from datetime import datetime
 from uuid import UUID
 
 from app.models.consent_record import ConsentRecord
-from app.models.enums import ConsentStatus, ConsentMethod
+from app.models.enums import ConsentMethod, ConsentStatus
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class ConsentService:
@@ -20,10 +19,10 @@ class ConsentService:
         status: str,
         method: str,
         organization_id: UUID,
-        campaign_id: Optional[UUID] = None,
-        customer_id: Optional[UUID] = None,
-        proof_url: Optional[str] = None,
-        proof_expires_at: Optional[datetime] = None,
+        campaign_id: UUID | None = None,
+        customer_id: UUID | None = None,
+        proof_url: str | None = None,
+        proof_expires_at: datetime | None = None,
     ) -> ConsentRecord:
         from app.services.suppression_service import SuppressionService
         suppression_service = SuppressionService(self.db)
@@ -72,7 +71,7 @@ class ConsentService:
         await self.db.refresh(consent)
         return consent
 
-    async def revoke_consent(self, consent_id: UUID, organization_id: UUID) -> Optional[ConsentRecord]:
+    async def revoke_consent(self, consent_id: UUID, organization_id: UUID) -> ConsentRecord | None:
         consent = await self.db.scalar(
             select(ConsentRecord).where(
                 and_(
@@ -90,7 +89,7 @@ class ConsentService:
         await self.db.refresh(consent)
         return consent
 
-    async def get_consent_status(self, phone: str, organization_id: UUID) -> Optional[ConsentStatus]:
+    async def get_consent_status(self, phone: str, organization_id: UUID) -> ConsentStatus | None:
         from app.services.suppression_service import SuppressionService
         suppression_service = SuppressionService(self.db)
         phone = suppression_service._normalize_phone(phone)
@@ -110,8 +109,8 @@ class ConsentService:
         organization_id: UUID,
         page: int = 1,
         page_size: int = 20,
-        status: Optional[str] = None,
-    ) -> tuple[List[ConsentRecord], int]:
+        status: str | None = None,
+    ) -> tuple[list[ConsentRecord], int]:
         query = select(ConsentRecord).where(ConsentRecord.organization_id == organization_id)
 
         if status:

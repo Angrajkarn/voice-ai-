@@ -1,9 +1,9 @@
 # Database session management
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import declarative_base
+
 from app.core.config import settings
-import os
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import declarative_base
 
 # Global variables for engine and session factory
 engine = None
@@ -56,10 +56,22 @@ async def init_db() -> None:
     """Initialize database - create tables"""
     # Import all models to register them
     from app.models import (  # noqa: F401
-        user, organization, customer, campaign, campaign_customer,
-        call, call_transcript, call_recording, callback,
-        integration, sync_log, automation_log,
-        suppression_list, consent_record, notification, audit_log
+        audit_log,
+        automation_log,
+        call,
+        call_recording,
+        call_transcript,
+        callback,
+        campaign,
+        campaign_customer,
+        consent_record,
+        customer,
+        integration,
+        notification,
+        organization,
+        suppression_list,
+        sync_log,
+        user,
     )
 
     engine = get_engine()

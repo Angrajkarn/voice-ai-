@@ -1,16 +1,21 @@
 # Customer API routes
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing: List, Optional
 from uuid import UUID
 
+from app.core.dependencies import get_current_organization, get_current_user
 from app.db.session import get_db
-from app.schemas.customer import CustomerCreate, CustomerUpdate, CustomerResponse, CustomerImport, CustomerBulkAction
-from app.services.customer_service import CustomerService
-from app.core.dependencies import get_current_user, get_current_organization
-from app.models.user import User
 from app.models.organization import Organization
+from app.models.user import User
+from app.schemas.customer import (
+    CustomerBulkAction,
+    CustomerCreate,
+    CustomerImport,
+    CustomerResponse,
+    CustomerUpdate,
+)
+from app.services.customer_service import CustomerService
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/customers", tags=["customers"])
 
@@ -19,13 +24,13 @@ router = APIRouter(prefix="/customers", tags=["customers"])
 async def list_customers(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    campaign_id: Optional[UUID] = None,
-    status: Optional[str] = None,
-    interest_level: Optional[str] = None,
-    language: Optional[str] = None,
-    search: Optional[str] = None,
-    has_callback: Optional[bool] = None,
-    do_not_call: Optional[bool] = None,
+    campaign_id: UUID | None = None,
+    status: str | None = None,
+    interest_level: str | None = None,
+    language: str | None = None,
+    search: str | None = None,
+    has_callback: bool | None = None,
+    do_not_call: bool | None = None,
     sort_by: str = Query("created_at"),
     sort_order: str = Query("desc", pattern="^(asc|desc)$"),
     db: AsyncSession = Depends(get_db),
@@ -74,7 +79,7 @@ async def create_customer(
 @router.post("/import", response_model=dict)
 async def import_customers(
     data: CustomerImport,
-    campaign_id: Optional[UUID] = None,
+    campaign_id: UUID | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     organization: Organization = Depends(get_current_organization),
@@ -87,7 +92,7 @@ async def import_customers(
 @router.post("/import/csv", response_model=dict)
 async def import_customers_csv(
     file: UploadFile = File(...),
-    campaign_id: Optional[UUID] = None,
+    campaign_id: UUID | None = None,
     skip_duplicates: bool = True,
     update_existing: bool = False,
     db: AsyncSession = Depends(get_db),
@@ -108,7 +113,7 @@ async def import_customers_csv(
 
 @router.get("/export")
 async def export_customers(
-    campaign_id: Optional[UUID] = None,
+    campaign_id: UUID | None = None,
     format: str = Query("csv", pattern="^(csv|xlsx)$"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),

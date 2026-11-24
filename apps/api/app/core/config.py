@@ -1,8 +1,7 @@
 # Core configuration for AI Voice Calling Platform API
 
+
 from pydantic_settings import BaseSettings
-from typing import List, Optional
-import os
 
 
 class Settings(BaseSettings):
@@ -40,20 +39,20 @@ class Settings(BaseSettings):
     ENCRYPTION_KEY: str = "your-encryption-key-change-in-production"
 
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:3001"]
+    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:3001"]
     CORS_ALLOW_CREDENTIALS: bool = True
-    CORS_ALLOW_METHODS: List[str] = ["*"]
-    CORS_ALLOW_HEADERS: List[str] = ["*"]
+    CORS_ALLOW_METHODS: list[str] = ["*"]
+    CORS_ALLOW_HEADERS: list[str] = ["*"]
 
     # Twilio
-    TWILIO_ACCOUNT_SID: Optional[str] = None
-    TWILIO_AUTH_TOKEN: Optional[str] = None
-    TWILIO_PHONE_NUMBER: Optional[str] = None
-    TWILIO_APPLICATION_SID: Optional[str] = None
-    TWILIO_WEBHOOK_BASE_URL: Optional[str] = None
+    TWILIO_ACCOUNT_SID: str | None = None
+    TWILIO_AUTH_TOKEN: str | None = None
+    TWILIO_PHONE_NUMBER: str | None = None
+    TWILIO_APPLICATION_SID: str | None = None
+    TWILIO_WEBHOOK_BASE_URL: str | None = None
 
     # OpenAI (for AI agent logic, NOT for TTS - we use free TTS)
-    OPENAI_API_KEY: Optional[str] = None
+    OPENAI_API_KEY: str | None = None
     OPENAI_MODEL: str = "gpt-4o"
     OPENAI_REALTIME_MODEL: str = "gpt-4o-realtime-preview"
 
@@ -64,21 +63,21 @@ class Settings(BaseSettings):
     FREE_TTS_CACHE_DIR: str = "./storage/tts_cache"
 
     # Google
-    GOOGLE_CLIENT_ID: Optional[str] = None
-    GOOGLE_CLIENT_SECRET: Optional[str] = None
-    GOOGLE_REDIRECT_URI: Optional[str] = None
-    GOOGLE_SHEETS_SCOPES: List[str] = ["https://www.googleapis.com/auth/spreadsheets"]
-    GOOGLE_DRIVE_SCOPES: List[str] = ["https://www.googleapis.com/auth/drive.file"]
+    GOOGLE_CLIENT_ID: str | None = None
+    GOOGLE_CLIENT_SECRET: str | None = None
+    GOOGLE_REDIRECT_URI: str | None = None
+    GOOGLE_SHEETS_SCOPES: list[str] = ["https://www.googleapis.com/auth/spreadsheets"]
+    GOOGLE_DRIVE_SCOPES: list[str] = ["https://www.googleapis.com/auth/drive.file"]
 
     # n8n
-    N8N_WEBHOOK_URL: Optional[str] = None
-    N8N_API_KEY: Optional[str] = None
+    N8N_WEBHOOK_URL: str | None = None
+    N8N_API_KEY: str | None = None
 
     # File Storage
     STORAGE_TYPE: str = "local"  # local, s3, gcs
     STORAGE_LOCAL_PATH: str = "./storage"
     STORAGE_MAX_FILE_SIZE: int = 100 * 1024 * 1024  # 100MB
-    STORAGE_ALLOWED_TYPES: List[str] = ["audio/mpeg", "audio/wav", "audio/mp3", "text/csv", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]
+    STORAGE_ALLOWED_TYPES: list[str] = ["audio/mpeg", "audio/wav", "audio/mp3", "text/csv", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]
 
     # Calling
     DEFAULT_CALLING_WINDOW_START: str = "09:00"

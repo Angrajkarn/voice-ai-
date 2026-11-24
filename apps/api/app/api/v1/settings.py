@@ -1,16 +1,15 @@
 # Settings API routes
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing: Optional
 from uuid import UUID
 
+from app.core.dependencies import get_current_organization, get_current_user
 from app.db.session import get_db
-from app.schemas.user import UserUpdate, UserResponse
-from app.schemas.organization import OrganizationUpdate, OrganizationResponse
-from app.core.dependencies import get_current_user, get_current_organization
-from app.models.user import User
 from app.models.organization import Organization
+from app.models.user import User
+from app.schemas.organization import OrganizationResponse, OrganizationUpdate
+from app.schemas.user import UserResponse, UserUpdate
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 

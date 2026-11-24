@@ -1,17 +1,22 @@
 # Callback API routes
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing: List, Optional
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
 
+from app.core.dependencies import get_current_organization, get_current_user
 from app.db.session import get_db
-from app.schemas.callback import CallbackCreate, CallbackUpdate, CallbackResponse, CallbackComplete
-from app.services.callback_service import CallbackService
-from app.core.dependencies import get_current_user, get_current_organization
-from app.models.user import User
 from app.models.organization import Organization
+from app.models.user import User
+from app.schemas.callback import (
+    CallbackComplete,
+    CallbackCreate,
+    CallbackResponse,
+    CallbackUpdate,
+)
+from app.services.callback_service import CallbackService
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/callbacks", tags=["callbacks"])
 
@@ -20,12 +25,12 @@ router = APIRouter(prefix="/callbacks", tags=["callbacks"])
 async def list_callbacks(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    campaign_id: Optional[UUID] = None,
-    customer_id: Optional[UUID] = None,
-    status: Optional[str] = None,
-    assignee_id: Optional[UUID] = None,
-    date_from: Optional[datetime] = None,
-    date_to: Optional[datetime] = None,
+    campaign_id: UUID | None = None,
+    customer_id: UUID | None = None,
+    status: str | None = None,
+    assignee_id: UUID | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     organization: Organization = Depends(get_current_organization),
@@ -121,7 +126,7 @@ async def complete_callback(
     return callback
 
 
-@router.get("/campaign/{campaign_id}/due", response_model=List[CallbackResponse])
+@router.get("/campaign/{campaign_id}/due", response_model=list[CallbackResponse])
 async def get_due_callbacks(
     campaign_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -143,7 +148,7 @@ async def get_due_callbacks(
     return callbacks
 
 
-@router.get("/campaign/{campaign_id}/upcoming", response_model=List[CallbackResponse])
+@router.get("/campaign/{campaign_id}/upcoming", response_model=list[CallbackResponse])
 async def get_upcoming_callbacks(
     campaign_id: UUID,
     hours: int = Query(24, ge=1, le=168),

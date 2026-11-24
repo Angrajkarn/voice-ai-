@@ -1,11 +1,22 @@
 # Call model
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Enum as SQLEnum, Text, JSON, Integer, Index
-from sqlalchemy.dialects.postgresql import UUID, ARRAY
-from sqlalchemy.orm import relationship
+
 from app.models.base import BaseModel
-from app.models.enums import CallStatus, CallDirection, InterestLevel, SyncStatus
-import uuid
+from app.models.enums import CallDirection, CallStatus, InterestLevel, SyncStatus
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy.orm import relationship
 
 
 class Call(BaseModel):

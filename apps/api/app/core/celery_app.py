@@ -1,7 +1,7 @@
 # Celery configuration for background tasks
 
-from celery import Celery
 from app.core.config import settings
+from celery import Celery
 
 celery_app = Celery(
     "voiceai",

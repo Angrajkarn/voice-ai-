@@ -1,23 +1,26 @@
 # Integration API routes
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing: List, Optional
 from uuid import UUID
 
+from app.core.dependencies import get_current_organization, get_current_user
 from app.db.session import get_db
-from app.schemas.integration import IntegrationCreate, IntegrationUpdate, IntegrationResponse, IntegrationTest
-from app.services.integration_service import IntegrationService
-from app.core.dependencies import get_current_user, get_current_organization
-from app.models.user import User
 from app.models.organization import Organization
+from app.models.user import User
+from app.schemas.integration import (
+    IntegrationCreate,
+    IntegrationResponse,
+    IntegrationUpdate,
+)
+from app.services.integration_service import IntegrationService
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
 
 
-@router.get("", response_model=List[IntegrationResponse])
+@router.get("", response_model=list[IntegrationResponse])
 async def list_integrations(
-    integration_type: Optional[str] = None,
+    integration_type: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     organization: Organization = Depends(get_current_organization),
@@ -105,14 +108,14 @@ async def sync_integration(
 @router.get("/google/auth-url")
 async def get_google_auth_url(
     type: str = Query(..., pattern="^(sheets|drive)$"),
-    campaign_id: Optional[UUID] = None,
+    campaign_id: UUID | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     organization: Organization = Depends(get_current_organization),
 ):
     """Get Google OAuth authorization URL"""
-    from google_auth_oauthlib.flow import Flow
     from app.core.config import settings
+    from google_auth_oauthlib.flow import Flow
 
     scopes = settings.GOOGLE_SHEETS_SCOPES if type == "sheets" else settings.GOOGLE_DRIVE_SCOPES
 
@@ -152,11 +155,11 @@ async def handle_google_callback(
     integration_type = parts[0]
     campaign_id = UUID(parts[1]) if parts[1] else None
 
-    from google_auth_oauthlib.flow import Flow
+
     from app.core.config import settings
-    from app.models.integration import Integration
     from app.models.enums import IntegrationType
-    import json
+    from app.models.integration import Integration
+    from google_auth_oauthlib.flow import Flow
 
     scopes = settings.GOOGLE_SHEETS_SCOPES if integration_type == "sheets" else settings.GOOGLE_DRIVE_SCOPES
 

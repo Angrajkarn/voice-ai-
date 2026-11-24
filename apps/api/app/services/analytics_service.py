@@ -1,20 +1,21 @@
 # Analytics Service - Handles analytics and reporting
 
-from sqlalchemy import select, func, and_, or_, case
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta, date
+from datetime import date, datetime, timedelta
 from uuid import UUID
 
 from app.models.call import Call
+from app.models.callback import Callback
 from app.models.campaign import Campaign
 from app.models.customer import Customer
-from app.models.callback import Callback
-from app.models.organization import Organization
-from app.models.enums import CallStatus, InterestLevel, CustomerStatus, CallbackStatus
-from app.schemas.analytics import CallAnalytics, CampaignAnalytics, OrganizationAnalytics, DashboardMetrics
-from app.core.config import settings
+from app.models.enums import CallbackStatus, CallStatus, CustomerStatus, InterestLevel
+from app.schemas.analytics import (
+    CallAnalytics,
+    CampaignAnalytics,
+    DashboardMetrics,
+    OrganizationAnalytics,
+)
+from sqlalchemy import and_, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class AnalyticsService:
@@ -315,9 +316,9 @@ class AnalyticsService:
         self,
         report_type: str,
         organization_id: UUID,
-        campaign_id: Optional[UUID] = None,
-        date_from: Optional[date] = None,
-        date_to: Optional[date] = None,
+        campaign_id: UUID | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
     ) -> bytes:
         """Export analytics report as CSV"""
         import csv

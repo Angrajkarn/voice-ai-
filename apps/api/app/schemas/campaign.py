@@ -1,22 +1,22 @@
 # Campaign schemas
 
-from pydantic import BaseModel, Field, field_validator
-from typing import Optional, List, Dict, Any
 from datetime import datetime
 from uuid import UUID
+
 from app.models.enums import CampaignStatus
+from pydantic import BaseModel, Field, field_validator
 
 
 class CampaignBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    description: Optional[str] = Field(None, max_length=500)
+    description: str | None = Field(None, max_length=500)
     purpose: str = Field(..., min_length=1, max_length=1000)
     ai_instructions: str = Field(..., min_length=1, max_length=10000)
     opening_script: str = Field(..., min_length=1, max_length=2000)
-    knowledge_base: Optional[str] = Field(None, max_length=20000)
+    knowledge_base: str | None = Field(None, max_length=20000)
     voice_id: str = Field(default="alloy", min_length=1, max_length=50)
     language: str = Field(default="en-IN", pattern=r'^(en-IN|hi-IN|hinglish|en-US|en-GB)$')
-    supported_languages: List[str] = Field(default=["en-IN", "hi-IN", "hinglish"], min_length=1)
+    supported_languages: list[str] = Field(default=["en-IN", "hi-IN", "hinglish"], min_length=1)
     max_calls_per_day: int = Field(default=100, ge=1, le=10000)
     max_retry_attempts: int = Field(default=3, ge=0, le=10)
     delay_between_calls: int = Field(default=30, ge=0, le=3600)
@@ -30,7 +30,7 @@ class CampaignBase(BaseModel):
     callback_window_end: str = Field(default="18:00", pattern=r'^([01]\d|2[0-3]):([0-5]\d)$')
     max_callback_days: int = Field(default=7, ge=1, le=90)
     sheets_sync_enabled: bool = False
-    sheets_spreadsheet_id: Optional[str] = Field(None, max_length=100)
+    sheets_spreadsheet_id: str | None = Field(None, max_length=100)
     sheets_sheet_name: str = Field(default="Calls", min_length=1, max_length=100)
     sheets_auto_sync: bool = True
 
@@ -54,41 +54,41 @@ class CampaignCreate(CampaignBase):
 
 
 class CampaignUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    description: Optional[str] = Field(None, max_length=500)
-    purpose: Optional[str] = Field(None, min_length=1, max_length=1000)
-    ai_instructions: Optional[str] = Field(None, min_length=1, max_length=10000)
-    opening_script: Optional[str] = Field(None, min_length=1, max_length=2000)
-    knowledge_base: Optional[str] = Field(None, max_length=20000)
-    voice_id: Optional[str] = Field(None, min_length=1, max_length=50)
-    language: Optional[str] = Field(None, pattern=r'^(en-IN|hi-IN|hinglish|en-US|en-GB)$')
-    supported_languages: Optional[List[str]] = None
-    max_calls_per_day: Optional[int] = Field(None, ge=1, le=10000)
-    max_retry_attempts: Optional[int] = Field(None, ge=0, le=10)
-    delay_between_calls: Optional[int] = Field(None, ge=0, le=3600)
-    calling_window_start: Optional[str] = Field(None, pattern=r'^([01]\d|2[0-3]):([0-5]\d)$')
-    calling_window_end: Optional[str] = Field(None, pattern=r'^([01]\d|2[0-3]):([0-5]\d)$')
-    calling_timezone: Optional[str] = Field(None, pattern=r'^[A-Za-z]+\/[A-Za-z_]+$')
-    skip_weekends: Optional[bool] = None
-    skip_holidays: Optional[bool] = None
-    allow_callbacks: Optional[bool] = None
-    callback_window_start: Optional[str] = Field(None, pattern=r'^([01]\d|2[0-3]):([0-5]\d)$')
-    callback_window_end: Optional[str] = Field(None, pattern=r'^([01]\d|2[0-3]):([0-5]\d)$')
-    max_callback_days: Optional[int] = Field(None, ge=1, le=90)
-    sheets_sync_enabled: Optional[bool] = None
-    sheets_spreadsheet_id: Optional[str] = Field(None, max_length=100)
-    sheets_sheet_name: Optional[str] = Field(None, min_length=1, max_length=100)
-    sheets_auto_sync: Optional[bool] = None
-    status: Optional[CampaignStatus] = None
+    name: str | None = Field(None, min_length=1, max_length=100)
+    description: str | None = Field(None, max_length=500)
+    purpose: str | None = Field(None, min_length=1, max_length=1000)
+    ai_instructions: str | None = Field(None, min_length=1, max_length=10000)
+    opening_script: str | None = Field(None, min_length=1, max_length=2000)
+    knowledge_base: str | None = Field(None, max_length=20000)
+    voice_id: str | None = Field(None, min_length=1, max_length=50)
+    language: str | None = Field(None, pattern=r'^(en-IN|hi-IN|hinglish|en-US|en-GB)$')
+    supported_languages: list[str] | None = None
+    max_calls_per_day: int | None = Field(None, ge=1, le=10000)
+    max_retry_attempts: int | None = Field(None, ge=0, le=10)
+    delay_between_calls: int | None = Field(None, ge=0, le=3600)
+    calling_window_start: str | None = Field(None, pattern=r'^([01]\d|2[0-3]):([0-5]\d)$')
+    calling_window_end: str | None = Field(None, pattern=r'^([01]\d|2[0-3]):([0-5]\d)$')
+    calling_timezone: str | None = Field(None, pattern=r'^[A-Za-z]+\/[A-Za-z_]+$')
+    skip_weekends: bool | None = None
+    skip_holidays: bool | None = None
+    allow_callbacks: bool | None = None
+    callback_window_start: str | None = Field(None, pattern=r'^([01]\d|2[0-3]):([0-5]\d)$')
+    callback_window_end: str | None = Field(None, pattern=r'^([01]\d|2[0-3]):([0-5]\d)$')
+    max_callback_days: int | None = Field(None, ge=1, le=90)
+    sheets_sync_enabled: bool | None = None
+    sheets_spreadsheet_id: str | None = Field(None, max_length=100)
+    sheets_sheet_name: str | None = Field(None, min_length=1, max_length=100)
+    sheets_auto_sync: bool | None = None
+    status: CampaignStatus | None = None
 
 
 class CampaignResponse(CampaignBase):
     id: UUID
     status: CampaignStatus
-    started_at: Optional[datetime]
-    paused_at: Optional[datetime]
-    completed_at: Optional[datetime]
-    stopped_at: Optional[datetime]
+    started_at: datetime | None
+    paused_at: datetime | None
+    completed_at: datetime | None
+    stopped_at: datetime | None
     total_customers: int
     completed_calls: int
     failed_calls: int
@@ -109,7 +109,7 @@ class CampaignValidate(BaseModel):
 
 
 class CampaignBulkAction(BaseModel):
-    campaign_ids: List[UUID] = Field(..., min_length=1, max_length=100)
+    campaign_ids: list[UUID] = Field(..., min_length=1, max_length=100)
     action: str = Field(..., pattern=r'^(start|pause|stop|delete)$')
 
 

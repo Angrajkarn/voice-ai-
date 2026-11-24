@@ -1,9 +1,9 @@
 # Analytics schemas
 
-from pydantic import BaseModel, Field
-from typing import List, Optional
-from datetime import date, datetime
+from datetime import date
 from uuid import UUID
+
+from pydantic import BaseModel, Field
 
 
 class CallAnalytics(BaseModel):
@@ -28,7 +28,7 @@ class CampaignAnalytics(BaseModel):
     campaign_id: UUID
     campaign_name: str
     period: str
-    data: List[CallAnalytics]
+    data: list[CallAnalytics]
     summary: "CampaignAnalyticsSummary"
 
 
@@ -46,7 +46,7 @@ class CampaignAnalyticsSummary(BaseModel):
 class OrganizationAnalytics(BaseModel):
     organization_id: UUID
     period: str
-    data: List[CallAnalytics]
+    data: list[CallAnalytics]
     summary: "OrganizationAnalyticsSummary"
 
 
@@ -84,8 +84,8 @@ class DashboardMetrics(BaseModel):
 
 class AnalyticsExportRequest(BaseModel):
     type: str = Field(..., pattern=r'^(campaign|organization|calls|customers|callbacks)$')
-    campaign_id: Optional[UUID] = None
-    organization_id: Optional[UUID] = None
-    date_from: Optional[date] = None
-    date_to: Optional[date] = None
+    campaign_id: UUID | None = None
+    organization_id: UUID | None = None
+    date_from: date | None = None
+    date_to: date | None = None
     format: str = Field(default="csv", pattern=r'^(csv|xlsx)$')

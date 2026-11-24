@@ -1,11 +1,9 @@
 # OpenAI Service - Handles OpenAI API interactions
 
-from typing import Optional, Dict, Any, List
-from datetime import datetime
-import openai
-from openai import AsyncOpenAI
+from typing import Any
 
 from app.core.config import settings
+from openai import AsyncOpenAI
 
 
 class OpenAIService:
@@ -17,7 +15,7 @@ class OpenAIService:
         self.tts_voice = settings.OPENAI_TTS_VOICE
         self.whisper_model = settings.OPENAI_WHISPER_MODEL
 
-    async def create_realtime_session(self, config: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_realtime_session(self, config: dict[str, Any]) -> dict[str, Any]:
         """Create a Realtime API session"""
         try:
             session = await self.client.beta.realtime.sessions.create(**config)
@@ -27,9 +25,9 @@ class OpenAIService:
                 "expires_at": session.client_secret.expires_at,
             }
         except Exception as e:
-            raise Exception(f"Failed to create realtime session: {str(e)}")
+            raise Exception(f"Failed to create realtime session: {e!s}")
 
-    async def text_to_speech(self, text: str, voice: Optional[str] = None) -> bytes:
+    async def text_to_speech(self, text: str, voice: str | None = None) -> bytes:
         """Convert text to speech"""
         try:
             response = await self.client.audio.speech.create(
@@ -40,7 +38,7 @@ class OpenAIService:
             )
             return response.content
         except Exception as e:
-            raise Exception(f"TTS failed: {str(e)}")
+            raise Exception(f"TTS failed: {e!s}")
 
     async def speech_to_text(self, audio_data: bytes, language: str = "en") -> str:
         """Convert speech to text using Whisper"""
@@ -57,14 +55,14 @@ class OpenAIService:
             )
             return response
         except Exception as e:
-            raise Exception(f"STT failed: {str(e)}")
+            raise Exception(f"STT failed: {e!s}")
 
     async def chat_completion(
         self,
-        messages: List[Dict[str, str]],
+        messages: list[dict[str, str]],
         temperature: float = 0.7,
         max_tokens: int = 1000,
-        response_format: Optional[Dict[str, str]] = None,
+        response_format: dict[str, str] | None = None,
     ) -> str:
         """Get chat completion"""
         try:
@@ -80,9 +78,9 @@ class OpenAIService:
             response = await self.client.chat.completions.create(**kwargs)
             return response.choices[0].message.content
         except Exception as e:
-            raise Exception(f"Chat completion failed: {str(e)}")
+            raise Exception(f"Chat completion failed: {e!s}")
 
-    async def create_embedding(self, text: str) -> List[float]:
+    async def create_embedding(self, text: str) -> list[float]:
         """Create text embedding"""
         try:
             response = await self.client.embeddings.create(
@@ -91,12 +89,12 @@ class OpenAIService:
             )
             return response.data[0].embedding
         except Exception as e:
-            raise Exception(f"Embedding failed: {str(e)}")
+            raise Exception(f"Embedding failed: {e!s}")
 
-    async def moderate_content(self, text: str) -> Dict[str, Any]:
+    async def moderate_content(self, text: str) -> dict[str, Any]:
         """Moderate content for safety"""
         try:
             response = await self.client.moderations.create(input=text)
             return response.results[0].model_dump()
         except Exception as e:
-            raise Exception(f"Moderation failed: {str(e)}")
+            raise Exception(f"Moderation failed: {e!s}")

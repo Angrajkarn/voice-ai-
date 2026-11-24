@@ -1,11 +1,11 @@
 # ConsentRecord model
 
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Enum as SQLEnum, Text, Index
+from app.models.base import BaseModel
+from app.models.enums import ConsentMethod, ConsentStatus
+from sqlalchemy import Column, DateTime, ForeignKey, Index, String
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from app.models.base import BaseModel
-from app.models.enums import ConsentStatus, ConsentMethod
-import uuid
 
 
 class ConsentRecord(BaseModel):

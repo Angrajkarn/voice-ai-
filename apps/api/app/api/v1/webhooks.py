@@ -1,17 +1,12 @@
 # Webhook API routes for Twilio and other providers
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Header, Form
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing: Optional
 from uuid import UUID
-import json
 
 from app.db.session import get_db
-from app.schemas.webhook import TwilioVoiceWebhook, TwilioStatusWebhook, TwilioRecordingWebhook, TwilioTranscriptionWebhook
 from app.services.call_service import CallService
 from app.services.twilio_service import TwilioService
-from app.models.campaign import Campaign
-from app.models.enums import CallStatus
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
@@ -42,7 +37,7 @@ async def twilio_voice_webhook(
         raise HTTPException(status_code=404, detail="Call not found")
 
     # Generate TwiML response
-    from twilio.twiml.voice_response import VoiceResponse, Gather, Say, Pause
+    from twilio.twiml.voice_response import Gather, VoiceResponse
 
     response = VoiceResponse()
 
@@ -99,7 +94,7 @@ async def twilio_gather_webhook(
     # In production, this would send to OpenAI Realtime API
     # For now, return a simple response
 
-    from twilio.twiml.voice_response import VoiceResponse, Gather, Say
+    from twilio.twiml.voice_response import Gather, VoiceResponse
 
     response = VoiceResponse()
 

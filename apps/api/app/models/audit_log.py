@@ -1,10 +1,9 @@
 # AuditLog model
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, Text, JSON, Index
+from app.models.base import BaseModel
+from sqlalchemy import JSON, Column, ForeignKey, Index, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from app.models.base import BaseModel
-import uuid
 
 
 class AuditLog(BaseModel):

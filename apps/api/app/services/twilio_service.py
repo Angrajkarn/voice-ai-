@@ -1,12 +1,10 @@
 # Twilio Service - Handles all Twilio API interactions
 
-from typing import Optional, Dict, Any
-from datetime import datetime
-import os
-from twilio.rest import Client
-from twilio.base.exceptions import TwilioRestException
+from typing import Any
 
 from app.core.config import settings
+from twilio.base.exceptions import TwilioRestException
+from twilio.rest import Client
 
 
 class TwilioService:
@@ -27,8 +25,8 @@ class TwilioService:
         from_number: str,
         campaign_id: str,
         call_id: str,
-        webhook_base_url: Optional[str] = None,
-    ) -> Optional[str]:
+        webhook_base_url: str | None = None,
+    ) -> str | None:
         """Make an outbound call"""
         if not self.is_configured():
             raise ValueError("Twilio not configured")
@@ -68,7 +66,7 @@ class TwilioService:
         except TwilioRestException:
             return False
 
-    async def get_call_details(self, call_sid: str) -> Optional[Dict[str, Any]]:
+    async def get_call_details(self, call_sid: str) -> dict[str, Any] | None:
         """Get call details from Twilio"""
         if not self.is_configured():
             return None
@@ -89,7 +87,7 @@ class TwilioService:
         except TwilioRestException:
             return None
 
-    async def get_recording(self, recording_sid: str) -> Optional[Dict[str, Any]]:
+    async def get_recording(self, recording_sid: str) -> dict[str, Any] | None:
         """Get recording details"""
         if not self.is_configured():
             return None
@@ -108,7 +106,7 @@ class TwilioService:
         except TwilioRestException:
             return None
 
-    async def download_recording(self, recording_sid: str) -> Optional[bytes]:
+    async def download_recording(self, recording_sid: str) -> bytes | None:
         """Download recording audio"""
         if not self.is_configured():
             return None
@@ -126,7 +124,7 @@ class TwilioService:
         to_number: str,
         from_number: str,
         body: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Send SMS message"""
         if not self.is_configured():
             return None
@@ -141,7 +139,7 @@ class TwilioService:
         except TwilioRestException:
             return None
 
-    async def get_phone_numbers(self) -> List[Dict[str, Any]]:
+    async def get_phone_numbers(self) -> List[dict[str, Any]]:
         """Get available phone numbers"""
         if not self.is_configured():
             return []
@@ -163,7 +161,7 @@ class TwilioService:
     async def validate_webhook_signature(
         self,
         url: str,
-        params: Dict[str, str],
+        params: dict[str, str],
         signature: str,
     ) -> bool:
         """Validate Twilio webhook signature"""

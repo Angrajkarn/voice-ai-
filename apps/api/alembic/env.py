@@ -1,17 +1,30 @@
-from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool
-from alembic import context
 import os
 import sys
+from logging.config import fileConfig
+
+from alembic import context
+from sqlalchemy import engine_from_config, pool
 
 # Add the app directory to the path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.models import (  # noqa: F401
-    user, organization, customer, campaign, campaign_customer,
-    call, call_transcript, call_recording, callback,
-    integration, sync_log, automation_log,
-    suppression_list, consent_record, notification, audit_log
+    audit_log,
+    automation_log,
+    call,
+    call_recording,
+    call_transcript,
+    callback,
+    campaign,
+    campaign_customer,
+    consent_record,
+    customer,
+    integration,
+    notification,
+    organization,
+    suppression_list,
+    sync_log,
+    user,
 )
 
 # this is the Alembic Config object
@@ -33,12 +46,6 @@ config.set_main_option('sqlalchemy.url', database_url)
 
 # Import models after setting the URL
 from app.db.session import Base
-from app.models import (  # noqa: F401
-    user, organization, customer, campaign, campaign_customer,
-    call, call_transcript, call_recording, callback,
-    integration, sync_log, automation_log,
-    suppression_list, consent_record, notification, audit_log
-)
 
 # target_metadata for 'autogenerate' support
 target_metadata = Base.metadata

@@ -1,9 +1,10 @@
 # Base model with common fields
 
+import uuid
+
 from sqlalchemy import Column, DateTime, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_mixin, declared_attr
-import uuid
 
 
 @declarative_mixin
@@ -25,4 +26,3 @@ class UUIDMixin:
 
 class BaseModel(TimestampMixin, UUIDMixin):
     """Base model combining UUID and Timestamp mixins"""
-    pass

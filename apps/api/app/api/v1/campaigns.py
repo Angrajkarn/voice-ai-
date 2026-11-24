@@ -1,16 +1,21 @@
 # Campaign API routes
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing: List, Optional
 from uuid import UUID
 
+from app.core.dependencies import get_current_organization, get_current_user
 from app.db.session import get_db
-from app.schemas.campaign import CampaignCreate, CampaignUpdate, CampaignResponse, CampaignValidate, CampaignBulkAction, CampaignMetrics
-from app.services.campaign_service import CampaignService
-from app.core.dependencies import get_current_user, get_current_organization
-from app.models.user import User
 from app.models.organization import Organization
+from app.models.user import User
+from app.schemas.campaign import (
+    CampaignBulkAction,
+    CampaignCreate,
+    CampaignMetrics,
+    CampaignResponse,
+    CampaignUpdate,
+)
+from app.services.campaign_service import CampaignService
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/campaigns", tags=["campaigns"])
 
@@ -19,8 +24,8 @@ router = APIRouter(prefix="/campaigns", tags=["campaigns"])
 async def list_campaigns(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    status: Optional[str] = None,
-    search: Optional[str] = None,
+    status: str | None = None,
+    search: str | None = None,
     sort_by: str = Query("created_at"),
     sort_order: str = Query("desc", pattern="^(asc|desc)$"),
     db: AsyncSession = Depends(get_db),

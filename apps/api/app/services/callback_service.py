@@ -1,20 +1,18 @@
 # Callback Service
 
-from sqlalchemy import select, func, and_, or_
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from typing import List, Optional
+import builtins
 from datetime import datetime, timedelta
 from uuid import UUID
 
+from app.core.config import settings
 from app.models.callback import Callback
 from app.models.campaign import Campaign
-from app.models.customer import Customer
-from app.models.call import Call
-from app.models.enums import CallbackStatus, CallStatus
+from app.models.enums import CallbackStatus
 from app.schemas.callback import CallbackCreate, CallbackUpdate
 from app.services.call_service import CallService
-from app.core.config import settings
+from sqlalchemy import and_, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 
 class CallbackService:
@@ -31,7 +29,7 @@ class CallbackService:
         await self.db.refresh(callback)
         return callback
 
-    async def get_by_id(self, callback_id: UUID) -> Optional[Callback]:
+    async def get_by_id(self, callback_id: UUID) -> Callback | None:
         result = await self.db.execute(
             select(Callback)
             .options(
@@ -49,13 +47,13 @@ class CallbackService:
         self,
         page: int = 1,
         page_size: int = 20,
-        campaign_id: Optional[UUID] = None,
-        customer_id: Optional[UUID] = None,
-        status: Optional[str] = None,
-        assignee_id: Optional[UUID] = None,
-        date_from: Optional[datetime] = None,
-        date_to: Optional[datetime] = None,
-    ) -> tuple[List[Callback], int]:
+        campaign_id: UUID | None = None,
+        customer_id: UUID | None = None,
+        status: str | None = None,
+        assignee_id: UUID | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
+    ) -> tuple[list[Callback], int]:
         query = select(Callback)
 
         if campaign_id:
@@ -89,7 +87,7 @@ class CallbackService:
 
         return list(callbacks), total
 
-    async def update(self, callback_id: UUID, data: CallbackUpdate) -> Optional[Callback]:
+    async def update(self, callback_id: UUID, data: CallbackUpdate) -> Callback | None:
         callback = await self.get_by_id(callback_id)
         if not callback:
             return None
@@ -111,7 +109,7 @@ class CallbackService:
         await self.db.commit()
         return True
 
-    async def complete(self, callback_id: UUID, outcome: str) -> Optional[Callback]:
+    async def complete(self, callback_id: UUID, outcome: str) -> Callback | None:
         callback = await self.get_by_id(callback_id)
         if not callback:
             return None
@@ -128,7 +126,7 @@ class CallbackService:
         await self.db.refresh(callback)
         return callback
 
-    async def get_due_callbacks(self, campaign_id: Optional[UUID] = None) -> List[Callback]:
+    async def get_due_callbacks(self, campaign_id: UUID | None = None) -> builtins.list[Callback]:
         """Get callbacks that are due to be made"""
         now = datetime.utcnow()
 
@@ -145,7 +143,7 @@ class CallbackService:
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
-    async def get_upcoming_callbacks(self, campaign_id: UUID, hours: int = 24) -> List[Callback]:
+    async def get_upcoming_callbacks(self, campaign_id: UUID, hours: int = 24) -> builtins.list[Callback]:
         """Get callbacks scheduled in the next N hours"""
         now = datetime.utcnow()
         future = now + timedelta(hours=hours)

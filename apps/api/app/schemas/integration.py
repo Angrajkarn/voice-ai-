@@ -1,36 +1,37 @@
 # Integration schemas
 
-from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
 from datetime import datetime
+from typing import Any
 from uuid import UUID
+
 from app.models.enums import IntegrationType, SyncStatus
+from pydantic import BaseModel, Field
 
 
 class IntegrationBase(BaseModel):
     type: IntegrationType
     name: str = Field(..., min_length=1, max_length=100)
-    config: Dict[str, Any] = Field(default_factory=dict)
+    config: dict[str, Any] = Field(default_factory=dict)
 
 
 class IntegrationCreate(IntegrationBase):
-    campaign_id: Optional[UUID] = None
+    campaign_id: UUID | None = None
 
 
 class IntegrationUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    config: Optional[Dict[str, Any]] = None
-    is_active: Optional[bool] = None
+    name: str | None = Field(None, min_length=1, max_length=100)
+    config: dict[str, Any] | None = None
+    is_active: bool | None = None
 
 
 class IntegrationResponse(IntegrationBase):
     id: UUID
     is_active: bool
-    last_sync_at: Optional[datetime]
+    last_sync_at: datetime | None
     last_sync_status: SyncStatus
-    last_sync_error: Optional[str]
+    last_sync_error: str | None
     organization_id: UUID
-    campaign_id: Optional[UUID]
+    campaign_id: UUID | None
     created_at: datetime
     updated_at: datetime
 
@@ -45,19 +46,19 @@ class IntegrationTest(BaseModel):
 class GoogleSheetsConfig(BaseModel):
     spreadsheet_id: str
     sheet_name: str = "Calls"
-    credentials: Dict[str, str]  # client_email, private_key, project_id
+    credentials: dict[str, str]  # client_email, private_key, project_id
 
 
 class GoogleDriveConfig(BaseModel):
-    folder_id: Optional[str] = None
-    credentials: Dict[str, str]
+    folder_id: str | None = None
+    credentials: dict[str, str]
 
 
 class TwilioConfig(BaseModel):
     account_sid: str
     auth_token: str
     phone_number: str
-    application_sid: Optional[str] = None
+    application_sid: str | None = None
 
 
 class OpenAIConfig(BaseModel):
@@ -70,4 +71,4 @@ class OpenAIConfig(BaseModel):
 
 class N8NConfig(BaseModel):
     webhook_url: str
-    api_key: Optional[str] = None
+    api_key: str | None = None

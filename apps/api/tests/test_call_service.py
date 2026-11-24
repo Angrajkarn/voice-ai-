@@ -1,22 +1,20 @@
 # Call service tests
 
-import pytest
-from uuid import uuid4
-from datetime import datetime
 
+import pytest
+from app.models.enums import CallDirection, CallStatus, InterestLevel
+from app.schemas.call import CallCreate, CallUpdate
 from app.services.call_service import CallService
-from app.schemas.call import CallCreate
-from app.models.enums import CallStatus, CallDirection, InterestLevel
 
 
 @pytest.mark.asyncio
-async def test_create_call(db_session):
+async def test_create_call(db_session, test_campaign, test_customer):
     """Test call creation"""
     service = CallService(db_session)
 
     call_data = CallCreate(
-        campaign_id=uuid4(),
-        customer_id=uuid4(),
+        campaign_id=test_campaign.id,
+        customer_id=test_customer.id,
         direction=CallDirection.OUTBOUND,
         from_number="+15551234567",
         to_number="+15557654321",
@@ -28,16 +26,18 @@ async def test_create_call(db_session):
     assert call.direction == CallDirection.OUTBOUND
     assert call.from_number == "+15551234567"
     assert call.to_number == "+15557654321"
+    assert call.campaign_id == test_campaign.id
+    assert call.customer_id == test_customer.id
 
 
 @pytest.mark.asyncio
-async def test_get_call(db_session):
+async def test_get_call(db_session, test_campaign, test_customer):
     """Test getting call by ID"""
     service = CallService(db_session)
 
     call_data = CallCreate(
-        campaign_id=uuid4(),
-        customer_id=uuid4(),
+        campaign_id=test_campaign.id,
+        customer_id=test_customer.id,
         direction=CallDirection.OUTBOUND,
         from_number="+15551234567",
         to_number="+15557654321",
@@ -50,18 +50,15 @@ async def test_get_call(db_session):
 
 
 @pytest.mark.asyncio
-async def test_list_calls(db_session):
+async def test_list_calls(db_session, test_campaign, test_customer):
     """Test listing calls with filters"""
     service = CallService(db_session)
-
-    campaign_id = uuid4()
-    customer_id = uuid4()
 
     # Create multiple calls
     for i in range(5):
         call_data = CallCreate(
-            campaign_id=campaign_id,
-            customer_id=customer_id,
+            campaign_id=test_campaign.id,
+            customer_id=test_customer.id,
             direction=CallDirection.OUTBOUND,
             from_number="+15551234567",
             to_number=f"+1555765432{i}",
@@ -69,30 +66,29 @@ async def test_list_calls(db_session):
         await service.create(call_data)
 
     # List with pagination
-    calls, total = await service.list(page=1, page_size=3, campaign_id=campaign_id)
+    calls, total = await service.list(page=1, page_size=3, campaign_id=test_campaign.id)
     assert total == 5
     assert len(calls) == 3
 
     # List with status filter
-    calls, total = await service.list(status=CallStatus.QUEUED)
+    calls, total = await service.list(status=CallStatus.QUEUED, campaign_id=test_campaign.id)
     assert total == 5
 
 
 @pytest.mark.asyncio
-async def test_update_call(db_session):
+async def test_update_call(db_session, test_campaign, test_customer):
     """Test call update"""
     service = CallService(db_session)
 
     call_data = CallCreate(
-        campaign_id=uuid4(),
-        customer_id=uuid4(),
+        campaign_id=test_campaign.id,
+        customer_id=test_customer.id,
         direction=CallDirection.OUTBOUND,
         from_number="+15551234567",
         to_number="+15557654321",
     )
     created = await service.create(call_data)
 
-    from app.schemas.call import CallUpdate
     update_data = CallUpdate(
         status=CallStatus.COMPLETED,
         duration=120,
@@ -108,18 +104,15 @@ async def test_update_call(db_session):
 
 
 @pytest.mark.asyncio
-async def test_get_next_queued_call(db_session):
+async def test_get_next_queued_call(db_session, test_campaign, test_customer):
     """Test getting next queued call"""
     service = CallService(db_session)
-
-    campaign_id = uuid4()
-    customer_id = uuid4()
 
     # Create queued calls
     for i in range(3):
         call_data = CallCreate(
-            campaign_id=campaign_id,
-            customer_id=uuid4(),
+            campaign_id=test_campaign.id,
+            customer_id=test_customer.id,
             direction=CallDirection.OUTBOUND,
             from_number="+15551234567",
             to_number=f"+1555765432{i}",
@@ -127,7 +120,7 @@ async def test_get_next_queued_call(db_session):
         await service.create(call_data)
 
     # Get next queued
-    next_call = await service.get_next_queued_call(campaign_id)
+    next_call = await service.get_next_queued_call(test_campaign.id)
     assert next_call is not None
     assert next_call.status == CallStatus.QUEUED
-    assert next_call.campaign_id == campaign_id
+    assert next_call.campaign_id == test_campaign.id

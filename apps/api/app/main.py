@@ -1,16 +1,27 @@
 # Main FastAPI application
 
+from contextlib import asynccontextmanager
+
+import structlog
+from app.api.v1 import (
+    analytics,
+    callbacks,
+    calls,
+    campaigns,
+    consent,
+    customers,
+    integrations,
+    notifications,
+    suppressions,
+    webhooks,
+)
+from app.api.v1 import settings as settings_api
+from app.core.config import settings
+from app.core.exceptions import AppException
+from app.db.session import close_db, init_db
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
-import structlog
-
-from app.core.config import settings
-from app.db.session import init_db, close_db
-from app.api.v1 import campaigns, customers, calls, callbacks, analytics, webhooks, integrations, settings as settings_api, suppressions, consent, notifications
-from app.core.exceptions import AppException
-
 
 # Configure structured logging
 structlog.configure(

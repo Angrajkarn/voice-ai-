@@ -1,19 +1,21 @@
 # Integration Service - Manages third-party integrations
 
-from sqlalchemy import select, and_
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Optional, Dict, Any
-from datetime import datetime
-from uuid import UUID
 import json
+from datetime import datetime
+from typing import Any
+from uuid import UUID
 
-from app.models.integration import Integration
 from app.models.enums import IntegrationType, SyncStatus
-from app.schemas.integration import IntegrationCreate, IntegrationUpdate, IntegrationTest
-from app.services.twilio_service import TwilioService
+from app.models.integration import Integration
+from app.schemas.integration import (
+    IntegrationCreate,
+    IntegrationUpdate,
+)
 from app.services.google_sheets_service import GoogleSheetsService
 from app.services.openai_service import OpenAIService
-from app.core.config import settings
+from app.services.twilio_service import TwilioService
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class IntegrationService:
@@ -33,7 +35,7 @@ class IntegrationService:
         await self.db.refresh(integration)
         return integration
 
-    async def get_by_id(self, integration_id: UUID, organization_id: UUID) -> Optional[Integration]:
+    async def get_by_id(self, integration_id: UUID, organization_id: UUID) -> Integration | None:
         result = await self.db.execute(
             select(Integration).where(
                 and_(
@@ -44,14 +46,14 @@ class IntegrationService:
         )
         return result.scalar_one_or_none()
 
-    async def list(self, organization_id: UUID, integration_type: Optional[IntegrationType] = None) -> List[Integration]:
+    async def list(self, organization_id: UUID, integration_type: IntegrationType | None = None) -> list[Integration]:
         query = select(Integration).where(Integration.organization_id == organization_id)
         if integration_type:
             query = query.where(Integration.type == integration_type)
         result = await self.db.execute(query.order_by(Integration.created_at.desc()))
         return list(result.scalars().all())
 
-    async def update(self, integration_id: UUID, organization_id: UUID, data: IntegrationUpdate) -> Optional[Integration]:
+    async def update(self, integration_id: UUID, organization_id: UUID, data: IntegrationUpdate) -> Integration | None:
         integration = await self.get_by_id(integration_id, organization_id)
         if not integration:
             return None
@@ -73,7 +75,7 @@ class IntegrationService:
         await self.db.commit()
         return True
 
-    async def test_integration(self, integration_id: UUID, organization_id: UUID) -> Dict[str, Any]:
+    async def test_integration(self, integration_id: UUID, organization_id: UUID) -> dict[str, Any]:
         integration = await self.get_by_id(integration_id, organization_id)
         if not integration:
             return {"success": False, "error": "Integration not found"}
@@ -94,7 +96,7 @@ class IntegrationService:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    async def _test_twilio(self, integration: Integration) -> Dict[str, Any]:
+    async def _test_twilio(self, integration: Integration) -> dict[str, Any]:
         config = integration.config
         if isinstance(config, str):
             config = json.loads(config)
@@ -107,15 +109,15 @@ class IntegrationService:
         except TwilioRestException as e:
             return {"success": False, "error": f"Twilio error: {e.msg}"}
 
-    async def _test_google_sheets(self, integration: Integration) -> Dict[str, Any]:
+    async def _test_google_sheets(self, integration: Integration) -> dict[str, Any]:
         try:
             client = await self.google_sheets._get_client(integration)
             # Try to list spreadsheets (limited)
             return {"success": True, "message": "Google Sheets authentication successful"}
         except Exception as e:
-            return {"success": False, "error": f"Google Sheets error: {str(e)}"}
+            return {"success": False, "error": f"Google Sheets error: {e!s}"}
 
-    async def _test_openai(self, integration: Integration) -> Dict[str, Any]:
+    async def _test_openai(self, integration: Integration) -> dict[str, Any]:
         config = integration.config
         if isinstance(config, str):
             config = json.loads(config)
@@ -130,9 +132,9 @@ class IntegrationService:
             )
             return {"success": True, "message": "OpenAI API connection successful"}
         except Exception as e:
-            return {"success": False, "error": f"OpenAI error: {str(e)}"}
+            return {"success": False, "error": f"OpenAI error: {e!s}"}
 
-    async def _test_google_drive(self, integration: Integration) -> Dict[str, Any]:
+    async def _test_google_drive(self, integration: Integration) -> dict[str, Any]:
         try:
             from app.services.google_drive_service import GoogleDriveService
             drive_service = GoogleDriveService(self.db)
@@ -141,9 +143,9 @@ class IntegrationService:
             client.files().get(fileId="root", fields="id").execute()
             return {"success": True, "message": "Google Drive authentication successful"}
         except Exception as e:
-            return {"success": False, "error": f"Google Drive error: {str(e)}"}
+            return {"success": False, "error": f"Google Drive error: {e!s}"}
 
-    async def _test_n8n(self, integration: Integration) -> Dict[str, Any]:
+    async def _test_n8n(self, integration: Integration) -> dict[str, Any]:
         config = integration.config
         if isinstance(config, str):
             config = json.loads(config)
@@ -160,9 +162,9 @@ class IntegrationService:
                 else:
                     return {"success": False, "error": f"n8n returned status {response.status_code}"}
         except Exception as e:
-            return {"success": False, "error": f"n8n error: {str(e)}"}
+            return {"success": False, "error": f"n8n error: {e!s}"}
 
-    async def sync_integration(self, integration_id: UUID, organization_id: UUID) -> Dict[str, Any]:
+    async def sync_integration(self, integration_id: UUID, organization_id: UUID) -> dict[str, Any]:
         integration = await self.get_by_id(integration_id, organization_id)
         if not integration:
             return {"success": False, "error": "Integration not found"}

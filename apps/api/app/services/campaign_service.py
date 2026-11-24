@@ -1,19 +1,19 @@
 # Campaign Service
 
-from sqlalchemy import select, func, and_, or_
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from typing import List, Optional, Dict, Any
+import builtins
 from datetime import datetime, timedelta
+from typing import Any
 from uuid import UUID
 
-from app.models.campaign import Campaign
-from app.models.campaign_customer import CampaignCustomer
 from app.models.call import Call
 from app.models.callback import Callback
+from app.models.campaign import Campaign
+from app.models.campaign_customer import CampaignCustomer
 from app.models.customer import Customer
-from app.schemas.campaign import CampaignCreate, CampaignUpdate, CampaignMetrics
-from app.core.config import settings
+from app.schemas.campaign import CampaignCreate, CampaignMetrics, CampaignUpdate
+from sqlalchemy import and_, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 
 class CampaignService:
@@ -31,7 +31,7 @@ class CampaignService:
         await self.db.refresh(campaign)
         return campaign
 
-    async def get_by_id(self, campaign_id: UUID, organization_id: UUID) -> Optional[Campaign]:
+    async def get_by_id(self, campaign_id: UUID, organization_id: UUID) -> Campaign | None:
         result = await self.db.execute(
             select(Campaign)
             .options(
@@ -52,11 +52,11 @@ class CampaignService:
         organization_id: UUID,
         page: int = 1,
         page_size: int = 20,
-        status: Optional[str] = None,
-        search: Optional[str] = None,
+        status: str | None = None,
+        search: str | None = None,
         sort_by: str = "created_at",
         sort_order: str = "desc",
-    ) -> tuple[List[Campaign], int]:
+    ) -> tuple[list[Campaign], int]:
         query = select(Campaign).where(Campaign.organization_id == organization_id)
 
         if status:
@@ -89,7 +89,7 @@ class CampaignService:
 
         return list(campaigns), total
 
-    async def update(self, campaign_id: UUID, organization_id: UUID, data: CampaignUpdate) -> Optional[Campaign]:
+    async def update(self, campaign_id: UUID, organization_id: UUID, data: CampaignUpdate) -> Campaign | None:
         campaign = await self.get_by_id(campaign_id, organization_id)
         if not campaign:
             return None
@@ -111,7 +111,7 @@ class CampaignService:
         await self.db.commit()
         return True
 
-    async def start(self, campaign_id: UUID, organization_id: UUID) -> Optional[Campaign]:
+    async def start(self, campaign_id: UUID, organization_id: UUID) -> Campaign | None:
         campaign = await self.get_by_id(campaign_id, organization_id)
         if not campaign:
             return None
@@ -125,7 +125,7 @@ class CampaignService:
         await self.db.refresh(campaign)
         return campaign
 
-    async def pause(self, campaign_id: UUID, organization_id: UUID) -> Optional[Campaign]:
+    async def pause(self, campaign_id: UUID, organization_id: UUID) -> Campaign | None:
         campaign = await self.get_by_id(campaign_id, organization_id)
         if not campaign:
             return None
@@ -139,7 +139,7 @@ class CampaignService:
         await self.db.refresh(campaign)
         return campaign
 
-    async def stop(self, campaign_id: UUID, organization_id: UUID) -> Optional[Campaign]:
+    async def stop(self, campaign_id: UUID, organization_id: UUID) -> Campaign | None:
         campaign = await self.get_by_id(campaign_id, organization_id)
         if not campaign:
             return None
@@ -153,7 +153,7 @@ class CampaignService:
         await self.db.refresh(campaign)
         return campaign
 
-    async def validate(self, campaign_id: UUID, organization_id: UUID) -> Dict[str, Any]:
+    async def validate(self, campaign_id: UUID, organization_id: UUID) -> dict[str, Any]:
         campaign = await self.get_by_id(campaign_id, organization_id)
         if not campaign:
             return {"valid": False, "errors": ["Campaign not found"], "warnings": []}
@@ -189,8 +189,8 @@ class CampaignService:
             warnings.append("Google Sheets sync enabled but no spreadsheet ID configured")
 
         # Check Twilio integration
-        from app.models.integration import Integration
         from app.models.enums import IntegrationType
+        from app.models.integration import Integration
         twilio_integration = await self.db.scalar(
             select(Integration).where(
                 and_(
@@ -239,7 +239,7 @@ class CampaignService:
             "warnings": warnings,
         }
 
-    async def get_metrics(self, campaign_id: UUID, organization_id: UUID) -> Optional[CampaignMetrics]:
+    async def get_metrics(self, campaign_id: UUID, organization_id: UUID) -> CampaignMetrics | None:
         campaign = await self.get_by_id(campaign_id, organization_id)
         if not campaign:
             return None
@@ -302,7 +302,7 @@ class CampaignService:
         campaign_id: UUID,
         organization_id: UUID,
         days: int = 30,
-    ) -> List[Dict[str, Any]]:
+    ) -> builtins.list[dict[str, Any]]:
         campaign = await self.get_by_id(campaign_id, organization_id)
         if not campaign:
             return []

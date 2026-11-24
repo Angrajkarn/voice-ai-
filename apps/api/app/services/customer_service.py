@@ -1,22 +1,19 @@
 # Customer Service
 
-from sqlalchemy import select, func, and_, or_, update
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from typing import List, Optional, Dict, Any, Tuple
-from datetime import datetime
-from uuid import UUID
+import builtins
 import csv
 import io
+from datetime import datetime
+from typing import Any
+from uuid import UUID
 
-from app.models.customer import Customer
 from app.models.campaign_customer import CampaignCustomer
-from app.models.call import Call
-from app.models.campaign import Campaign
+from app.models.customer import Customer
+from app.models.enums import CustomerStatus, SuppressionReason, SuppressionSource
 from app.models.suppression_list import SuppressionList
-from app.models.enums import CustomerStatus, InterestLevel, SuppressionReason, SuppressionSource
-from app.schemas.customer import CustomerCreate, CustomerUpdate, CustomerImport
-from app.core.config import settings
+from app.schemas.customer import CustomerCreate, CustomerImport, CustomerUpdate
+from sqlalchemy import and_, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class CustomerService:
@@ -66,7 +63,7 @@ class CustomerService:
         self,
         data: CustomerImport,
         organization_id: UUID,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         successful = 0
         failed = 0
         duplicates = 0
@@ -158,10 +155,10 @@ class CustomerService:
         self,
         file_content: bytes,
         organization_id: UUID,
-        campaign_id: Optional[UUID] = None,
+        campaign_id: UUID | None = None,
         skip_duplicates: bool = True,
         update_existing: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         # Parse CSV
         text = file_content.decode("utf-8")
         reader = csv.DictReader(io.StringIO(text))
@@ -216,7 +213,7 @@ class CustomerService:
 
         return result
 
-    def _map_csv_row(self, row: Dict[str, str]) -> Optional[Dict[str, Any]]:
+    def _map_csv_row(self, row: dict[str, str]) -> dict[str, Any] | None:
         # Default column mapping
         column_map = {
             "first_name": "first_name",
@@ -242,7 +239,7 @@ class CustomerService:
         for csv_col, field in column_map.items():
             # Find matching column (case-insensitive)
             matched_key = next(
-                (k for k in row.keys() if k.lower().strip() == csv_col.lower()),
+                (k for k in row if k.lower().strip() == csv_col.lower()),
                 None
             )
             if matched_key and row[matched_key]:
@@ -278,7 +275,7 @@ class CustomerService:
         # Default: assume Indian number
         return f"+91{cleaned}"
 
-    async def get_by_id(self, customer_id: UUID, organization_id: UUID) -> Optional[Customer]:
+    async def get_by_id(self, customer_id: UUID, organization_id: UUID) -> Customer | None:
         result = await self.db.execute(
             select(Customer).where(
                 and_(
@@ -294,16 +291,16 @@ class CustomerService:
         organization_id: UUID,
         page: int = 1,
         page_size: int = 20,
-        campaign_id: Optional[UUID] = None,
-        status: Optional[str] = None,
-        interest_level: Optional[str] = None,
-        language: Optional[str] = None,
-        search: Optional[str] = None,
-        has_callback: Optional[bool] = None,
-        do_not_call: Optional[bool] = None,
+        campaign_id: UUID | None = None,
+        status: str | None = None,
+        interest_level: str | None = None,
+        language: str | None = None,
+        search: str | None = None,
+        has_callback: bool | None = None,
+        do_not_call: bool | None = None,
         sort_by: str = "created_at",
         sort_order: str = "desc",
-    ) -> Tuple[List[Customer], int]:
+    ) -> tuple[list[Customer], int]:
         query = select(Customer).where(Customer.organization_id == organization_id)
 
         if campaign_id:
@@ -354,7 +351,7 @@ class CustomerService:
 
         return list(customers), total
 
-    async def update(self, customer_id: UUID, organization_id: UUID, data: CustomerUpdate) -> Optional[Customer]:
+    async def update(self, customer_id: UUID, organization_id: UUID, data: CustomerUpdate) -> Customer | None:
         customer = await self.get_by_id(customer_id, organization_id)
         if not customer:
             return None
@@ -382,9 +379,9 @@ class CustomerService:
     async def add_to_campaign(
         self,
         campaign_id: UUID,
-        customer_ids: List[UUID],
+        customer_ids: builtins.list[UUID],
         organization_id: UUID,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         added = 0
         skipped = 0
 
@@ -420,7 +417,7 @@ class CustomerService:
     async def remove_from_campaign(
         self,
         campaign_id: UUID,
-        customer_ids: List[UUID],
+        customer_ids: builtins.list[UUID],
     ) -> int:
         result = await self.db.execute(
             select(CampaignCustomer).where(
@@ -440,7 +437,7 @@ class CustomerService:
 
     async def mark_do_not_call(
         self,
-        customer_ids: List[UUID],
+        customer_ids: builtins.list[UUID],
         organization_id: UUID,
         reason: str = "MANUAL",
     ) -> int:
@@ -468,10 +465,10 @@ class CustomerService:
 
     async def schedule_callback(
         self,
-        customer_ids: List[UUID],
+        customer_ids: builtins.list[UUID],
         organization_id: UUID,
         callback_date: datetime,
-        campaign_id: Optional[UUID] = None,
+        campaign_id: UUID | None = None,
     ) -> int:
         scheduled = 0
         for customer_id in customer_ids:
@@ -505,7 +502,7 @@ class CustomerService:
     async def export_customers(
         self,
         organization_id: UUID,
-        campaign_id: Optional[UUID] = None,
+        campaign_id: UUID | None = None,
         format: str = "csv",
     ) -> bytes:
         customers, _ = await self.list(organization_id, page=1, page_size=10000, campaign_id=campaign_id)
