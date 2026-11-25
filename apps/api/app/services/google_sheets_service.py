@@ -6,6 +6,7 @@ from typing import Any
 from uuid import UUID
 
 import gspread
+from gspread.utils import ValueInputOption
 from app.core.config import settings
 from app.models.call import Call
 from app.models.campaign import Campaign
@@ -80,7 +81,10 @@ class GoogleSheetsService:
 
         try:
             client = await self._get_client(integration)
-            spreadsheet = client.open_by_key(campaign.sheets_spreadsheet_id)
+            spreadsheet_id = campaign.sheets_spreadsheet_id
+            if not spreadsheet_id:
+                return False
+            spreadsheet = client.open_by_key(spreadsheet_id)
             worksheet = spreadsheet.worksheet(campaign.sheets_sheet_name)
 
             # Prepare row data
@@ -89,14 +93,14 @@ class GoogleSheetsService:
             # Find existing row or append new
             if call.sheets_row_index:
                 try:
-                    worksheet.update(f"A{call.sheets_row_index}:P{call.sheets_row_index}", [row_data])
+                    worksheet.update([row_data], range_name=f"A{call.sheets_row_index}:P{call.sheets_row_index}")
                 except gspread.exceptions.GSpreadException:
                     # Row might be deleted, append new
                     call.sheets_row_index = None
 
             if not call.sheets_row_index:
                 # Append new row
-                worksheet.append_row(row_data, value_input_option="USER_ENTERED")
+                worksheet.append_row(row_data, value_input_option=ValueInputOption.user_entered)
                 # Get the new row index (last row)
                 all_values = worksheet.get_all_values()
                 call.sheets_row_index = len(all_values)
@@ -144,8 +148,11 @@ class GoogleSheetsService:
             return {"success": False, "error": "No Google Sheets integration"}
 
         try:
+            spreadsheet_id = campaign.sheets_spreadsheet_id
+            if not spreadsheet_id:
+                return {"success": False, "error": "Campaign spreadsheet ID is not configured"}
             client = await self._get_client(integration)
-            spreadsheet = client.open_by_key(campaign.sheets_spreadsheet_id)
+            spreadsheet = client.open_by_key(spreadsheet_id)
 
             # Get or create customers worksheet
             try:
@@ -221,8 +228,11 @@ class GoogleSheetsService:
     async def create_spreadsheet_structure(self, integration: Integration, campaign: Campaign) -> bool:
         """Create the initial spreadsheet structure with proper headers"""
         try:
+            spreadsheet_id = campaign.sheets_spreadsheet_id
+            if not spreadsheet_id:
+                return False
             client = await self._get_client(integration)
-            spreadsheet = client.open_by_key(campaign.sheets_spreadsheet_id)
+            spreadsheet = client.open_by_key(spreadsheet_id)
 
             # Create Calls sheet
             try:
@@ -299,14 +309,19 @@ class GoogleSheetsService:
             from app.services.campaign_service import CampaignService
             campaign_service = CampaignService(self.db)
             metrics = await campaign_service.get_metrics(campaign.id, campaign.organization_id)
+            if metrics is None:
+                return False
+            spreadsheet_id = campaign.sheets_spreadsheet_id
+            if not spreadsheet_id:
+                return False
 
             client = await self._get_client(integration)
-            spreadsheet = client.open_by_key(campaign.sheets_spreadsheet_id)
+            spreadsheet = client.open_by_key(spreadsheet_id)
             summary_sheet = spreadsheet.worksheet("Summary")
 
             # Clear and write summary
             summary_sheet.clear()
-            summary_data = [
+            summary_data: list[list[str | int | float]] = [
                 ["Metric", "Value"],
                 ["Campaign", campaign.name],
                 ["Status", campaign.status.value],

@@ -8,6 +8,7 @@ from uuid import UUID
 from app.models.call import Call
 from app.models.callback import Callback
 from app.models.campaign import Campaign
+from app.models.enums import CampaignStatus
 from app.models.campaign_customer import CampaignCustomer
 from app.models.customer import Customer
 from app.schemas.campaign import CampaignCreate, CampaignMetrics, CampaignUpdate
@@ -119,7 +120,7 @@ class CampaignService:
         if campaign.status not in ["DRAFT", "READY", "PAUSED", "STOPPED"]:
             raise ValueError(f"Cannot start campaign in status: {campaign.status}")
 
-        campaign.status = "RUNNING"
+        campaign.status = CampaignStatus.RUNNING
         campaign.started_at = datetime.utcnow()
         await self.db.commit()
         await self.db.refresh(campaign)
@@ -133,7 +134,7 @@ class CampaignService:
         if campaign.status != "RUNNING":
             raise ValueError(f"Cannot pause campaign in status: {campaign.status}")
 
-        campaign.status = "PAUSED"
+        campaign.status = CampaignStatus.PAUSED
         campaign.paused_at = datetime.utcnow()
         await self.db.commit()
         await self.db.refresh(campaign)
@@ -147,7 +148,7 @@ class CampaignService:
         if campaign.status not in ["RUNNING", "PAUSED", "READY"]:
             raise ValueError(f"Cannot stop campaign in status: {campaign.status}")
 
-        campaign.status = "STOPPED"
+        campaign.status = CampaignStatus.STOPPED
         campaign.stopped_at = datetime.utcnow()
         await self.db.commit()
         await self.db.refresh(campaign)
@@ -229,7 +230,7 @@ class CampaignService:
 
         is_valid = len(errors) == 0
         if is_valid:
-            campaign.status = "READY"
+            campaign.status = CampaignStatus.READY
 
         await self.db.commit()
 
@@ -256,6 +257,8 @@ class CampaignService:
             ).where(Call.campaign_id == campaign_id)
         )
         stats = call_stats.first()
+        if stats is None:
+            raise RuntimeError("Campaign call metrics query returned no row")
 
         # Get callback count
         callback_count = await self.db.scalar(

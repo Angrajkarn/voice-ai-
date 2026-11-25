@@ -48,6 +48,8 @@ class AnalyticsService:
             ).where(Call.campaign.has(organization_id=organization_id))
         )
         stats = call_stats.first()
+        if stats is None:
+            raise RuntimeError("Dashboard call metrics query returned no row")
 
         # Interest levels
         interest_stats = await self.db.execute(
@@ -58,6 +60,8 @@ class AnalyticsService:
             ).where(Customer.organization_id == organization_id)
         )
         interest = interest_stats.first()
+        if interest is None:
+            raise RuntimeError("Dashboard interest metrics query returned no row")
 
         # Callbacks
         callbacks_scheduled = await self.db.scalar(
@@ -150,7 +154,7 @@ class AnalyticsService:
         daily_data = []
         for row in calls:
             daily_data.append(CallAnalytics(
-                date=row.date.isoformat() if isinstance(row.date, date) else str(row.date),
+                date=row.date.isoformat() if row.date is not None else "",
                 total_calls=row.total_calls or 0,
                 completed_calls=row.completed_calls or 0,
                 failed_calls=row.failed_calls or 0,
@@ -192,7 +196,7 @@ class AnalyticsService:
             )
             .where(
                 and_(
-                    Customer.campaigns.any(Campaign.id == campaign_id),
+                    select(CampaignCustomer.id).where(and_(CampaignCustomer.customer_id == Customer.id, CampaignCustomer.campaign_id == campaign_id)).exists(),
                     Customer.opted_out_at >= start_date,
                 )
             )
@@ -359,13 +363,13 @@ class AnalyticsService:
                 ])
 
         elif report_type == "customers":
-            query = select(Customer).where(Customer.organization_id == organization_id)
+            customer_query = select(Customer).where(Customer.organization_id == organization_id)
             if campaign_id:
-                query = query.join(Customer.campaign_customers).where(
+                customer_query = customer_query.join(Customer.campaign_customers).where(
                     CampaignCustomer.campaign_id == campaign_id
                 )
 
-            result = await self.db.execute(query.order_by(Customer.created_at.desc()))
+            result = await self.db.execute(customer_query.order_by(Customer.created_at.desc()))
             customers = result.scalars().all()
 
             writer.writerow([
@@ -384,8 +388,8 @@ class AnalyticsService:
                 ])
 
         elif report_type == "campaigns":
-            query = select(Campaign).where(Campaign.organization_id == organization_id)
-            result = await self.db.execute(query.order_by(Campaign.created_at.desc()))
+            campaign_query = select(Campaign).where(Campaign.organization_id == organization_id)
+            result = await self.db.execute(campaign_query.order_by(Campaign.created_at.desc()))
             campaigns = result.scalars().all()
 
             writer.writerow([
