@@ -60,7 +60,7 @@ export async function findByIdOrThrow<T>(
   const delegate = prisma[model] as any;
   const record = await delegate.findUnique({ where: { id } });
   if (!record) {
-    throw new Error(errorMessage || `${model} not found: ${id}`);
+    throw new Error(errorMessage || `${String(model)} not found: ${id}`);
   }
   return record as T;
 }
@@ -76,7 +76,7 @@ export async function findFirstOrThrow<T>(
   const delegate = prisma[model] as any;
   const record = await delegate.findFirst({ where });
   if (!record) {
-    throw new Error(errorMessage || `${model} not found`);
+    throw new Error(errorMessage || `${String(model)} not found`);
   }
   return record as T;
 }
