@@ -14,7 +14,7 @@ class AuditLog(BaseModel):
     entity_id = Column(String(100), nullable=False, index=True)
     old_data = Column(JSON, nullable=True)
     new_data = Column(JSON, nullable=True)
-    metadata = Column(JSON, default={}, nullable=False)  # IP, user agent, etc.
+    metadata_json = Column("metadata", JSON, default=dict, nullable=False)  # IP, user agent, etc.
 
     # Foreign keys
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
