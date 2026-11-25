@@ -77,7 +77,7 @@ export function getStatusColor(status: string): string {
     READY: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
     RUNNING: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
     PAUSED: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-    COMPLETED: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    COMPLETED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
     STOPPED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 
     // Call
@@ -103,7 +103,6 @@ export function getStatusColor(status: string): string {
     NOT_INTERESTED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
     CALLBACK_REQUESTED: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
     DO_NOT_CALL: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    INVALID_NUMBER: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
     OPTED_OUT: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 
     // Interest
@@ -115,7 +114,6 @@ export function getStatusColor(status: string): string {
     // Sync
     PENDING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
     SYNCED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    FAILED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
     RETRYING: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   };
   return colors[status] || 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
