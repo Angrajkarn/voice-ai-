@@ -200,13 +200,13 @@ async def test_mark_do_not_call(db_session, test_organization, sample_customer_d
 
 
 @pytest.mark.asyncio
-async def test_schedule_callback(db_session, test_organization, test_customer):
+async def test_schedule_callback(db_session, test_organization, test_customer, test_campaign):
     """Test scheduling callbacks"""
     service = CustomerService(db_session)
 
     callback_date = datetime(2025, 1, 15, 10, 0, 0)
     scheduled = await service.schedule_callback(
-        [test_customer.id], test_organization.id, callback_date
+        [test_customer.id], test_organization.id, callback_date, campaign_id=test_campaign.id
     )
     assert scheduled == 1
 
