@@ -287,6 +287,9 @@ jobs:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment: production
+    concurrency:
+      group: voiceai-production-deploy
+      cancel-in-progress: false
     timeout-minutes: 30
     permissions:
       contents: read
@@ -313,7 +316,7 @@ jobs:
               exit 1
             fi
           done
-          if [[ ! "$VPS_APP_PATH" =~ ^/[a-zA-Z0-9._/-]+$ ]]; then
+          if [[ "$VPS_APP_PATH" == "/" || ! "$VPS_APP_PATH" =~ ^/[a-zA-Z0-9._/-]+$ ]]; then
             echo "::error::VPS_APP_PATH must be a safe absolute path, e.g. /opt/voice-ai"
             exit 1
           fi
@@ -363,6 +366,7 @@ jobs:
             --exclude='.git/' \
             --exclude='.env' \
             --exclude='.env.*' \
+            --exclude='docker/ssl/' \
             --exclude='node_modules/' \
             --exclude='.next/' \
             --exclude='__pycache__/' \
@@ -393,6 +397,8 @@ jobs:
           command -v docker >/dev/null 2>&1 || { echo "Docker is not installed on the VPS"; exit 1; }
           docker compose version >/dev/null 2>&1 || { echo "Docker Compose V2 is required on the VPS"; exit 1; }
           test -f .env || { echo "Missing $APP_PATH/.env. Create production environment configuration before deploying."; exit 1; }
+          test -s docker/ssl/cert.pem || { echo "Missing $APP_PATH/docker/ssl/cert.pem. Install the production TLS certificate on the VPS."; exit 1; }
+          test -s docker/ssl/key.pem || { echo "Missing $APP_PATH/docker/ssl/key.pem. Install the production TLS private key on the VPS."; exit 1; }
 
           echo "Deploying commit $DEPLOY_SHA"
           docker compose --profile production config --quiet
@@ -414,6 +420,13 @@ jobs:
             docker compose --profile production ps
             docker compose logs --tail=150 api web
             echo "Production health check failed"
+            exit 1
+          fi
+
+          if ! docker compose exec -T nginx wget -qO- --no-check-certificate https://127.0.0.1/health >/dev/null; then
+            docker compose --profile production ps
+            docker compose logs --tail=150 nginx
+            echo "Production HTTPS reverse-proxy health check failed"
             exit 1
           fi
 
