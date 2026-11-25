@@ -162,10 +162,6 @@ def update_campaign_statistics():
             updated = 0
             for campaign in campaigns.scalars().all():
                 # Total calls
-                total_calls = await db.scalar(
-                    select(func.count(Call.id)).where(Call.campaign_id == campaign.id)
-                ) or 0
-
                 # Completed calls
                 completed_calls = await db.scalar(
                     select(func.count(Call.id)).where(
