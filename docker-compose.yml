@@ -211,7 +211,8 @@ services:
       dockerfile: Dockerfile
     container_name: voiceai-web
     environment:
-      - NEXT_PUBLIC_API_URL=http://api:8000
+      - NEXT_PUBLIC_API_URL=/api/v1
+      - PYTHON_API_URL=http://api:8000
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-your-nextauth-secret-change-in-production}
       - NEXTAUTH_URL=http://localhost:3000
     ports:
