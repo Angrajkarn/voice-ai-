@@ -237,7 +237,7 @@ class CustomerService:
             "tags": "tags",
         }
 
-        customer = {}
+        customer: dict[str, Any] = {}
         for csv_col, field in column_map.items():
             # Find matching column (case-insensitive)
             matched_key = next(

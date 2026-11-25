@@ -186,7 +186,7 @@ class AnalyticsService:
             )
             .group_by(func.date(Callback.scheduled_at))
         )
-        callback_map = {row.date: row.count for row in callbacks if row.date is not None}
+        callback_map = {row.date: int(row._mapping["count"] or 0) for row in callbacks if row.date is not None}
 
         # Opt-outs
         opt_outs = await self.db.execute(
@@ -202,7 +202,7 @@ class AnalyticsService:
             )
             .group_by(func.date(Customer.opted_out_at))
         )
-        opt_out_map = {row.date: row.count for row in opt_outs if row.date is not None}
+        opt_out_map = {row.date: int(row._mapping["count"] or 0) for row in opt_outs if row.date is not None}
 
         # Merge callback and opt-out data
         for day in daily_data:
