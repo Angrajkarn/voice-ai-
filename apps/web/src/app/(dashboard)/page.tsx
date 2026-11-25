@@ -28,6 +28,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { cn, formatDuration, formatRelativeTime, getStatusColor } from '@/lib/utils';
+import { customersApi, callsApi, campaignsApi } from '@/lib/api';
 
 const mockMetrics = [
   { name: 'Total Customers', value: '1,234', change: '+12%', icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-100 dark:bg-blue-900/30' },
@@ -60,15 +61,71 @@ const mockCampaigns = [
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = React.useState<'overview' | 'campaigns' | 'recent'>('overview');
+  const [metrics, setMetrics] = React.useState(mockMetrics.map((item) => ({ ...item, value: '—', change: 'Live' })));
+  const [recentCalls, setRecentCalls] = React.useState<any[]>([]);
+  const [campaigns, setCampaigns] = React.useState<any[]>([]);
+  const [dataLoading, setDataLoading] = React.useState(true);
+  const [dataError, setDataError] = React.useState('');
+
+  React.useEffect(() => {
+    let mounted = true;
+    const loadDashboard = async () => {
+      const [customersResult, callsResult, campaignsResult] = await Promise.allSettled([
+        customersApi.list({ page: 1, pageSize: 50 }),
+        callsApi.list({ page: 1, pageSize: 50 }),
+        campaignsApi.list({ page: 1, pageSize: 50 }),
+      ]);
+      if (!mounted) return;
+      const customerPayload: any = customersResult.status === 'fulfilled' ? customersResult.value : {};
+      const callsPayload: any = callsResult.status === 'fulfilled' ? callsResult.value : {};
+      const campaignPayload: any = campaignsResult.status === 'fulfilled' ? campaignsResult.value : {};
+      const callRows = Array.isArray(callsPayload?.data) ? callsPayload.data : [];
+      const campaignRows = Array.isArray(campaignPayload?.data) ? campaignPayload.data : [];
+      const totalCustomers = Number(customerPayload?.total ?? customerPayload?.data?.length ?? 0);
+      const totalCalls = Number(callsPayload?.total ?? callRows.length);
+      const completed = callRows.filter((call: any) => ['COMPLETED', 'ANSWERED'].includes(String(call.status || '').toUpperCase())).length;
+      const failed = callRows.filter((call: any) => ['FAILED', 'ERROR'].includes(String(call.status || '').toUpperCase())).length;
+      const answered = callRows.filter((call: any) => !['NO_ANSWER', 'BUSY', 'FAILED', 'CANCELLED'].includes(String(call.status || '').toUpperCase())).length;
+      const interested = callRows.filter((call: any) => ['HOT', 'WARM', 'INTERESTED'].includes(String(call.interest_level || call.interest || '').toUpperCase())).length;
+      const hot = callRows.filter((call: any) => String(call.interest_level || call.interest || '').toUpperCase() === 'HOT').length;
+      const callbackCount = callRows.filter((call: any) => Boolean(call.callback_at || call.callback_id)).length;
+      const values = [totalCustomers, totalCalls, completed, failed, answered, interested, hot, callbackCount];
+      setMetrics(mockMetrics.map((item, index) => ({ ...item, value: values[index].toLocaleString('en-IN'), change: 'Live' })));
+      setRecentCalls(callRows.slice(0, 8).map((call: any) => ({
+        customer: call.customer?.name || call.customer_name || call.customerName || 'Unknown customer',
+        phone: call.to_number || call.phone || call.customer?.phone || '—',
+        campaign: call.campaign?.name || call.campaign_name || '—',
+        status: String(call.status || 'UNKNOWN').toUpperCase(),
+        duration: Number(call.duration_seconds || call.duration || 0),
+        interest: String(call.interest_level || call.interest || 'UNKNOWN').toUpperCase(),
+        time: call.created_at ? formatRelativeTime(call.created_at) : '—',
+      })));
+      setCampaigns(campaignRows.slice(0, 5).map((campaign: any) => ({
+        name: campaign.name || 'Untitled campaign',
+        status: String(campaign.status || 'DRAFT').toUpperCase(),
+        customers: Number(campaign.total_customers ?? campaign.customer_count ?? 0),
+        completed: Number(campaign.completed_calls ?? campaign.completed ?? 0),
+        interested: Number(campaign.interested_count ?? campaign.interested ?? 0),
+        callbacks: Number(campaign.callback_count ?? campaign.callbacks ?? 0),
+      })));
+      const failures = [customersResult, callsResult, campaignsResult].filter(result => result.status === 'rejected').length;
+      setDataError(failures === 3 ? 'The API could not load dashboard data. Check your backend connection and sign-in.' : failures ? 'Some dashboard data could not be loaded; available sections are shown.' : '');
+      setDataLoading(false);
+    };
+    void loadDashboard();
+    const timer = window.setInterval(loadDashboard, 30000);
+    return () => { mounted = false; window.clearInterval(timer); };
+  }, []);
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="mx-auto w-full max-w-[1600px] space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
             <p className="text-muted-foreground">Overview of your AI voice calling campaigns</p>
+            <p className="mt-1 text-xs text-muted-foreground">{dataLoading ? "Connecting to workspace…" : "Refreshes automatically every 30 seconds"}{dataError ? ` · ${dataError}` : ""}</p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm">
@@ -87,8 +144,8 @@ export default function DashboardPage() {
         </div>
 
         {/* Metrics Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
-          {mockMetrics.map((metric) => (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {metrics.map((metric) => (
             <Card key={metric.name} className="relative overflow-hidden">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
@@ -159,7 +216,7 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {mockCampaigns.map((campaign) => (
+                    {campaigns.map((campaign) => (
                       <div key={campaign.name} className="space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="font-medium">{campaign.name}</span>
@@ -291,7 +348,7 @@ export default function DashboardPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockRecentCalls.map((call) => (
+                    {recentCalls.map((call) => (
                       <TableRow key={`${call.customer}-${call.time}`}>
                         <TableCell className="font-medium">{call.customer}</TableCell>
                         <TableCell>{call.phone}</TableCell>
