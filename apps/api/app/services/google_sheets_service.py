@@ -6,7 +6,8 @@ from typing import Any
 from uuid import UUID
 
 import gspread
-from gspread.utils import ValueInputOption
+from typing import cast
+
 from app.core.config import settings
 from app.models.call import Call
 from app.models.campaign import Campaign
@@ -93,14 +94,14 @@ class GoogleSheetsService:
             # Find existing row or append new
             if call.sheets_row_index:
                 try:
-                    worksheet.update([row_data], range_name=f"A{call.sheets_row_index}:P{call.sheets_row_index}")
+                    worksheet.update(values=[row_data], range_name=f"A{call.sheets_row_index}:P{call.sheets_row_index}")
                 except gspread.exceptions.GSpreadException:
                     # Row might be deleted, append new
                     call.sheets_row_index = None
 
             if not call.sheets_row_index:
                 # Append new row
-                worksheet.append_row(row_data, value_input_option=ValueInputOption.user_entered)
+                worksheet.append_row(row_data, value_input_option=cast(Any, "USER_ENTERED"))
                 # Get the new row index (last row)
                 all_values = worksheet.get_all_values()
                 call.sheets_row_index = len(all_values)
@@ -178,7 +179,7 @@ class GoogleSheetsService:
 
             # Clear and write headers
             worksheet.clear()
-            worksheet.append_row(headers, value_input_option="USER_ENTERED")
+            worksheet.append_row(headers, value_input_option=cast(Any, "USER_ENTERED"))
 
             # Write customer data
             rows = []
@@ -195,7 +196,7 @@ class GoogleSheetsService:
                 ])
 
             if rows:
-                worksheet.append_rows(rows, value_input_option="USER_ENTERED")
+                worksheet.append_rows(rows, value_input_option=cast(Any, "USER_ENTERED"))
 
             return {"success": True, "synced": len(rows)}
 
@@ -248,7 +249,7 @@ class GoogleSheetsService:
                 "Customer Intent", "Objection", "Callback Required", "Callback Date",
                 "Final Outcome", "Recording URL", "Attempts", "Last Updated"
             ]
-            calls_sheet.append_row(calls_headers, value_input_option="USER_ENTERED")
+            calls_sheet.append_row(calls_headers, value_input_option=cast(Any, "USER_ENTERED"))
 
             # Format header row
             calls_sheet.format("A1:Q1", {
@@ -269,7 +270,7 @@ class GoogleSheetsService:
                 "Company", "Location", "Language", "Status", "Interest Level",
                 "Call Attempts", "Last Call", "Next Callback", "Tags", "Added At"
             ]
-            customers_sheet.append_row(customers_headers, value_input_option="USER_ENTERED")
+            customers_sheet.append_row(customers_headers, value_input_option=cast(Any, "USER_ENTERED"))
             customers_sheet.format("A1:O1", {
                 "textFormat": {"bold": True},
                 "backgroundColor": {"red": 0.2, "green": 0.6, "blue": 0.9},
@@ -283,7 +284,7 @@ class GoogleSheetsService:
                 summary_sheet = spreadsheet.add_worksheet("Summary", rows=100, cols=10)
 
             summary_headers = ["Metric", "Value"]
-            summary_sheet.append_row(summary_headers, value_input_option="USER_ENTERED")
+            summary_sheet.append_row(summary_headers, value_input_option=cast(Any, "USER_ENTERED"))
 
             return True
 
@@ -338,7 +339,7 @@ class GoogleSheetsService:
                 ["Answer Rate (%)", metrics.answer_rate],
                 ["Last Updated", datetime.utcnow().isoformat()],
             ]
-            summary_sheet.append_rows(summary_data, value_input_option="USER_ENTERED")
+            summary_sheet.append_rows(summary_data, value_input_option=cast(Any, "USER_ENTERED"))
 
             return True
         except gspread.exceptions.GSpreadException:

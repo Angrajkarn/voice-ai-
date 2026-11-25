@@ -81,7 +81,7 @@ async def twilio_gather_webhook(
 ):
     """Handle speech input from customer"""
     form_data = await request.form()
-    data = dict(form_data)
+    data = {key: value for key, value in form_data.items() if isinstance(value, str)}
 
     speech_result = data.get("SpeechResult", "")
     confidence = data.get("Confidence", "0")
@@ -131,7 +131,7 @@ async def twilio_status_webhook(
 ):
     """Handle Twilio call status callbacks"""
     form_data = await request.form()
-    data = dict(form_data)
+    data = {key: value for key, value in form_data.items() if isinstance(value, str)}
 
     # Validate signature
     twilio = TwilioService()
@@ -162,7 +162,7 @@ async def twilio_recording_webhook(
 ):
     """Handle Twilio recording callbacks"""
     form_data = await request.form()
-    data = dict(form_data)
+    data = {key: value for key, value in form_data.items() if isinstance(value, str)}
 
     # Validate signature
     twilio = TwilioService()
@@ -176,7 +176,7 @@ async def twilio_recording_webhook(
     recording_sid = data.get("RecordingSid")
     recording_url = data.get("RecordingUrl")
     duration = data.get("RecordingDuration")
-    if not all((call_sid, recording_sid, recording_url, duration)):
+    if not call_sid or not recording_sid or not recording_url or not duration:
         raise HTTPException(status_code=400, detail="Missing Twilio recording fields")
 
     service = CallService(db)
@@ -194,7 +194,7 @@ async def twilio_transcription_webhook(
 ):
     """Handle Twilio transcription callbacks"""
     form_data = await request.form()
-    data = dict(form_data)
+    data = {key: value for key, value in form_data.items() if isinstance(value, str)}
 
     # Validate signature
     twilio = TwilioService()
@@ -207,7 +207,7 @@ async def twilio_transcription_webhook(
     call_sid = data.get("CallSid")
     transcription_sid = data.get("TranscriptionSid")
     transcription_text = data.get("TranscriptionText")
-    if not all((call_sid, transcription_sid, transcription_text)):
+    if not call_sid or not transcription_sid or not transcription_text:
         raise HTTPException(status_code=400, detail="Missing Twilio transcription fields")
 
     service = CallService(db)
