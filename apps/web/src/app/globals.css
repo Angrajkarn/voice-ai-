@@ -31,8 +31,28 @@
     --status-completed: 262 83% 68%;
     --status-stopped: 350 89% 65%;
   }
-  .dark {
-    color-scheme: dark;
+  [data-theme="voiceai"] { color-scheme: dark; }
+  [data-theme="voiceai-light"] {
+    color-scheme: light;
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 191 91% 30%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 239 84% 67%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 40%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 350 89% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 88%;
+    --input: 214 32% 88%;
+    --ring: 191 91% 30%;
   }
   * { @apply border-border; }
   body {

@@ -22,7 +22,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         <input
           type={type}
           id={inputId}
-          className={cn('input input-bordered h-11 w-full rounded-xl border-base-300 bg-base-100 text-base-content placeholder:text-base-content/40 focus:input-primary', error && 'input-error', className)}
+          className={cn('input input-bordered h-11 w-full rounded-xl border-base-300 bg-base-100 text-base-content placeholder:text-base-content/40 focus:border-primary focus:outline-primary', error && 'input-error', className)}
           ref={ref}
           aria-invalid={error ? 'true' : 'false'}
           aria-describedby={error ? errorId : helperText ? helperId : undefined}
