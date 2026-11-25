@@ -78,7 +78,6 @@ def retry_failed_calls():
     """Retry failed calls across all running campaigns"""
     async def _retry():
         async with AsyncSessionLocal() as db:
-            campaign_service = CampaignService(db)
             call_service = CallService(db)
 
             # Get running campaigns
@@ -117,8 +116,6 @@ def process_call_queue():
     """Process call queue for all running campaigns"""
     async def _process():
         async with AsyncSessionLocal() as db:
-            campaign_service = CampaignService(db)
-
             campaigns = await db.execute(
                 select(Campaign).where(Campaign.status == CampaignStatus.RUNNING)
             )
