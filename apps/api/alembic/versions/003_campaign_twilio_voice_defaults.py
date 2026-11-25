@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from alembic import op
 import sqlalchemy as sa
 
-revision: str = "003_campaign_twilio_voice_defaults"
+revision: str = "003_twilio_voice"
 down_revision: str | None = "002_campaign_customer_timestamps"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
