@@ -118,7 +118,7 @@ export default function DashboardPage() {
               <Filter className="mr-2 h-4 w-4" />
               Filters
             </Button>
-            <Button size="sm">
+            <Button size="sm" onClick={() => window.location.assign('/campaigns')}>
               <Plus className="mr-2 h-4 w-4" />
               New Campaign
             </Button>
