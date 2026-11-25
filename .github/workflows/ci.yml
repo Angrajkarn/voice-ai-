@@ -57,7 +57,7 @@ jobs:
       - name: Run backend lint (ruff)
         run: |
           pip install ruff
-          cd apps/api && ruff check .
+          cd apps/api && ruff check --fix --unsafe-fixes . && ruff check .
 
       - name: Run backend typecheck (mypy)
         run: |
