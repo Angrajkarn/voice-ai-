@@ -26,18 +26,18 @@ import {
 } from 'lucide-react';
 
 const navigation = [
-  { name: 'Overview', href: '/', icon: LayoutDashboard },
-  { name: 'Customers', href: '/customers', icon: Users },
-  { name: 'Campaigns', href: '/campaigns', icon: Zap },
-  { name: 'AI Agent', href: '/ai-agent', icon: Bot },
-  { name: 'Live Calls', href: '/live-calls', icon: Activity },
-  { name: 'Call History', href: '/calls', icon: History },
-  { name: 'Transcripts', href: '/transcripts', icon: FileText },
-  { name: 'Recordings', href: '/recordings', icon: Mic },
-  { name: 'Callbacks', href: '/callbacks', icon: Table },
-  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { name: 'Integrations', href: '/integrations', icon: Shield },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Customers', href: '/dashboard/customers', icon: Users },
+  { name: 'Campaigns', href: '/dashboard/campaigns', icon: Zap },
+  { name: 'AI Agent', href: '/dashboard/ai-agent', icon: Bot },
+  { name: 'Live Calls', href: '/dashboard/live-calls', icon: Activity },
+  { name: 'Call History', href: '/dashboard/calls', icon: History },
+  { name: 'Transcripts', href: '/dashboard/transcripts', icon: FileText },
+  { name: 'Recordings', href: '/dashboard/recordings', icon: Mic },
+  { name: 'Callbacks', href: '/dashboard/callbacks', icon: Table },
+  { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+  { name: 'Integrations', href: '/dashboard/integrations', icon: Shield },
+  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
 export function Sidebar({ collapsed = false, onToggle }: { collapsed?: boolean; onToggle: () => void }) {
@@ -54,7 +54,7 @@ export function Sidebar({ collapsed = false, onToggle }: { collapsed?: boolean; 
         {/* Logo */}
         <div className={cn('flex h-16 items-center justify-between border-b px-4', collapsed && 'justify-center')}>
           {!collapsed && (
-            <Link href="/" className="flex items-center space-x-2">
+            <Link href="/dashboard" className="flex items-center space-x-2">
               <Phone className="h-8 w-8 text-primary" />
               <span className="font-bold text-xl">VoiceAI</span>
             </Link>
@@ -73,7 +73,7 @@ export function Sidebar({ collapsed = false, onToggle }: { collapsed?: boolean; 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 p-3 overflow-y-auto" aria-label="Main navigation">
           {navigation.map((item) => {
-            const isActive = (item.href === '/' ? pathname === '/' : pathname === item.href || pathname.startsWith(item.href + '/'));
+            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
             return (
               <Link
                 key={item.name}
@@ -136,7 +136,7 @@ export function MobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: (
       >
         <div className="flex h-full flex-col">
           <div className="flex h-16 items-center justify-between border-b px-4">
-            <Link href="/" className="flex items-center space-x-2" onClick={onClose}>
+            <Link href="/dashboard" className="flex items-center space-x-2" onClick={onClose}>
               <Phone className="h-8 w-8 text-primary" />
               <span className="font-bold text-xl">VoiceAI</span>
             </Link>
@@ -147,7 +147,7 @@ export function MobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
           <nav className="flex-1 space-y-1 p-3 overflow-y-auto">
             {navigation.map((item) => {
-              const isActive = item.href === '/' ? pathname === '/' : pathname === item.href || pathname.startsWith(item.href + '/');
+              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
               return (
                 <Link
                   key={item.name}
