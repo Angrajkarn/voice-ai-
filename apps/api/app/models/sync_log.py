@@ -20,7 +20,7 @@ class SyncLog(BaseModel):
     status = Column(SQLEnum(SyncStatus), default=SyncStatus.PENDING, nullable=False, index=True)
     error = Column(Text, nullable=True)
     request_data = Column(JSONB, nullable=True)
-    response_data = Column(JSON, nullable=True)
+    response_data = Column(JSONB, nullable=True)
     retry_count = Column(Integer, default=0, nullable=False)
     completed_at = Column(DateTime(timezone=True), nullable=True)
 
