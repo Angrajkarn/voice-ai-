@@ -51,7 +51,7 @@ def process_campaign_calls(self, campaign_id: str):
                 select(Call).where(
                     and_(
                         Call.campaign_id == UUID(campaign_id),
-                        Call.created_at >= today_start,
+                        Call.initiated_at >= today_start,
                     )
                 )
             )
