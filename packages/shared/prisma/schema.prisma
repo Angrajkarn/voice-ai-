@@ -159,6 +159,7 @@ model Organization {
   suppressions    SuppressionList[]
   consentRecords  ConsentRecord[]
   auditLogs       AuditLog[]
+  notifications   Notification[]
 
   @@index([slug])
 }
@@ -268,6 +269,9 @@ model Campaign {
   calls               Call[]
   callbacks           Callback[]
   integrations        Integration[]
+  automationLogs      AutomationLog[]
+  consentRecords      ConsentRecord[]
+  notifications       Notification[]
 
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
@@ -349,6 +353,10 @@ model Call {
   agent             User?         @relation("CallAgent", fields: [agentId], references: [id])
 
   callbacks         Callback[]
+  transcript        CallTranscript?
+  recording         CallRecording?
+  resultCallbacks   Callback[]       @relation("CallbackResult")
+  notifications     Notification[]
 
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
