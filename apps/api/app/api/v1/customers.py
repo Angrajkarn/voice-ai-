@@ -1,5 +1,6 @@
 # Customer API routes
 
+from typing import Any
 from uuid import UUID
 
 from app.core.dependencies import get_current_organization, get_current_user
@@ -183,7 +184,7 @@ async def bulk_customer_action(
     organization: Organization = Depends(get_current_organization),
 ):
     service = CustomerService(db)
-    results = {"success": 0, "failed": 0, "errors": []}
+    results: dict[str, Any] = {"success": 0, "failed": 0, "errors": []}
 
     for customer_id in data.customer_ids:
         try:

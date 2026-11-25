@@ -7,7 +7,7 @@ from uuid import UUID
 from app.core.config import settings
 from app.models.callback import Callback
 from app.models.campaign import Campaign
-from app.models.enums import CallbackStatus
+from app.models.enums import CallbackStatus, CallDirection
 from app.schemas.call import CallCreate
 from app.schemas.callback import CallbackCreate, CallbackUpdate
 from app.services.call_service import CallService
@@ -212,9 +212,10 @@ class CallbackService:
             # Create new call for callback
             call = await self.call_service.create(
                 CallCreate(
+                    call_sid=None,
                     campaign_id=campaign.id,
                     customer_id=customer.id,
-                    direction="OUTBOUND",
+                    direction=CallDirection.OUTBOUND,
                     from_number=campaign.integrations[0].config.get("phone_number") if campaign.integrations else "+15551234567",
                     to_number=customer.phone,
                 )

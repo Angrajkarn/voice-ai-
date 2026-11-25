@@ -1,5 +1,6 @@
 # Campaign API routes
 
+from typing import Any
 from uuid import UUID
 
 from app.core.dependencies import get_current_organization, get_current_user
@@ -183,7 +184,7 @@ async def bulk_campaign_action(
     organization: Organization = Depends(get_current_organization),
 ):
     service = CampaignService(db)
-    results = {"success": 0, "failed": 0, "errors": []}
+    results: dict[str, Any] = {"success": 0, "failed": 0, "errors": []}
 
     for campaign_id in data.campaign_ids:
         try:

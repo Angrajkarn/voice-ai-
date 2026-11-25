@@ -1,6 +1,8 @@
 # Database session management
 
 
+from typing import AsyncGenerator
+
 from app.core.config import settings
 from app.models.base import Base
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -37,7 +39,7 @@ def get_session_factory():
     return AsyncSessionLocal
 
 
-async def get_db() -> "AsyncSession":
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Dependency for getting database session"""
     session_factory = get_session_factory()
     async with session_factory() as session:

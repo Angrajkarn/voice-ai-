@@ -5,6 +5,7 @@ from uuid import UUID
 
 from app.core.dependencies import get_current_organization, get_current_user
 from app.db.session import get_db
+from app.models.enums import CallStatus
 from app.models.organization import Organization
 from app.models.user import User
 from app.schemas.call import CallCreate, CallResponse
@@ -150,6 +151,7 @@ async def retry_call(
 
     # Create new call for retry
     new_call = await service.create(CallCreate(
+        call_sid=None,
         campaign_id=call.campaign_id,
         customer_id=call.customer_id,
         direction=call.direction,
@@ -172,10 +174,10 @@ async def cancel_call(
     if not call or call.campaign.organization_id != organization.id:
         raise HTTPException(status_code=404, detail="Call not found")
 
-    if call.status not in ["QUEUED", "INITIATING", "RINGING"]:
+    if call.status not in [CallStatus.QUEUED, CallStatus.INITIATING, CallStatus.RINGING]:
         raise HTTPException(status_code=400, detail=f"Cannot cancel call in status: {call.status}")
 
-    call.status = "CANCELLED"
+    call.status = CallStatus.CANCELLED
     await db.commit()
 
     return {"message": "Call cancelled"}

@@ -428,7 +428,12 @@ class FreeTTSService:
         """Test if a TTS engine works"""
         try:
             test_text = "Hello, this is a test of the free text to speech system."
-            audio = await self.text_to_speech(test_text, engine=engine)
+            previous_engine = self.engine
+            self.engine = engine
+            try:
+                audio = await self.text_to_speech(test_text)
+            finally:
+                self.engine = previous_engine
             return {
                 "success": True,
                 "engine": engine,
