@@ -1,7 +1,6 @@
 // API client for the web app
 
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig, AxiosRequestConfig } from 'axios';
-import { signOut } from 'next-auth/react';
 
 // Keep API calls same-origin; the Next.js route handler proxies them to FastAPI at runtime.
 const API_URL = '/backend';
@@ -46,10 +45,7 @@ class ApiClient {
       (response) => response,
       async (error: AxiosError) => {
         if (error.response?.status === 401) {
-          // Token expired or invalid
-          if (typeof window !== 'undefined') {
-            await signOut({ callbackUrl: '/login' });
-          }
+          return Promise.reject(new Error('Authentication is required. Sign-in is not configured on this deployment yet.'));
         }
         return Promise.reject(this.formatError(error));
       }
