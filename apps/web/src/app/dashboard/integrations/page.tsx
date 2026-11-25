@@ -6,7 +6,7 @@ import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plug, RefreshCw, Trash2, FlaskConical, RotateCw, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { Plug, RefreshCw, Trash2, FlaskConical, RotateCw, ShieldAlert } from 'lucide-react';
 
 type Integration={id:string;type:string;name:string;is_active:boolean;last_sync_at?:string|null;last_sync_status:string;last_sync_error?:string|null;campaign_id?:string|null};
 export default function IntegrationsPage(){
