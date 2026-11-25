@@ -1,14 +1,14 @@
 # Free TTS Service - Supports multiple free/open-source TTS engines
 
-from typing: Optional, List, Dict, Any
-from datetime: datetime
+from typing import Optional, List, Dict, Any
+from datetime import datetime
 import asyncio
 import subprocess
 import tempfile
 import os
 import json
 import base64
-from pathlib: Path
+from pathlib import Path
 import httpx
 
 from app.core.config import settings

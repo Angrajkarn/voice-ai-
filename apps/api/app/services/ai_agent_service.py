@@ -1,9 +1,9 @@
 # AI Agent Service - Handles AI conversation logic and call analysis
 # Uses OpenAI for AI logic (GPT-4o) but FREE TTS for voice synthesis
 
-from typing: List, Dict, Any, Optional
-from datetime: datetime
-from uuid: UUID
+from typing import List, Dict, Any, Optional
+from datetime import datetime
+from uuid import UUID
 import json
 import openai
 from openai import AsyncOpenAI

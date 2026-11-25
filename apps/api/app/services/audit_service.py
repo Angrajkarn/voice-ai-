@@ -2,7 +2,7 @@
 
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing: List, Optional, Any
+from typing import List, Optional, Any
 from datetime import datetime
 from uuid import UUID
 import json

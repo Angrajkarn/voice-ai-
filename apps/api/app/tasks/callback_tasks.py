@@ -3,7 +3,7 @@
 from celery import shared_task
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from typing: List
+from typing import List
 from uuid import UUID
 from datetime import datetime
 import asyncio
