@@ -3,9 +3,9 @@
 
 from app.models.base import BaseModel
 from app.models.enums import SyncStatus
-from sqlalchemy import JSON, Column, DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 
@@ -19,7 +19,7 @@ class SyncLog(BaseModel):
     entity_id = Column(String(100), nullable=False, index=True)
     status = Column(SQLEnum(SyncStatus), default=SyncStatus.PENDING, nullable=False, index=True)
     error = Column(Text, nullable=True)
-    request_data = Column(JSON, nullable=True)
+    request_data = Column(JSONB, nullable=True)
     response_data = Column(JSON, nullable=True)
     retry_count = Column(Integer, default=0, nullable=False)
     completed_at = Column(DateTime(timezone=True), nullable=True)
