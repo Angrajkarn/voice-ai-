@@ -170,7 +170,7 @@ class TwilioService:
         signature: str,
     ) -> bool:
         """Validate Twilio webhook signature"""
-        if not self.is_configured():
+        if not self.is_configured() or not self.auth_token:
             return False
 
         from twilio.request_validator import RequestValidator
