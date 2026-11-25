@@ -10,6 +10,7 @@ from app.models.callback import Callback
 from app.models.campaign import Campaign
 from app.models.enums import CampaignStatus, CustomerStatus, IntegrationType
 from app.models.integration import Integration
+from app.core.config import settings
 from app.models.campaign_customer import CampaignCustomer
 from app.models.customer import Customer
 from app.schemas.campaign import CampaignCreate, CampaignMetrics, CampaignUpdate
@@ -129,6 +130,8 @@ class CampaignService:
             config = json.loads(config)
         from_number = config.get("phone_number") if config else None
         if not from_number: raise ValueError("Connect Twilio and configure an outgoing phone number in Integrations before starting.")
+        if not settings.TWILIO_WEBHOOK_BASE_URL:
+            raise ValueError("Set TWILIO_WEBHOOK_BASE_URL on the backend to your public HTTPS API URL before starting calls.")
         members = await self.db.execute(select(Customer).join(CampaignCustomer, CampaignCustomer.customer_id == Customer.id).where(and_(
             CampaignCustomer.campaign_id == campaign.id, Customer.organization_id == organization_id,
             Customer.do_not_call.is_(False), Customer.status.notin_([CustomerStatus.DO_NOT_CALL, CustomerStatus.OPTED_OUT]),
