@@ -39,8 +39,11 @@ async def create_integration(
     organization: Organization = Depends(get_current_organization),
 ):
     service = IntegrationService(db)
-    integration = await service.create(data, organization.id)
-    return integration
+    try:
+        integration = await service.create(data, organization.id)
+        return integration
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.get("/{integration_id}", response_model=IntegrationResponse)
