@@ -39,8 +39,10 @@ class IntegrationResponse(IntegrationBase):
     def redact_config(self, config: dict[str, Any]) -> dict[str, Any]:
         sensitive = {"auth_token", "client_secret", "refresh_token", "private_key", "api_key", "token"}
         def redact(value: Any) -> Any:
-            if isinstance(value, dict): return {key: ("********" if key.lower() in sensitive and item else redact(item)) for key, item in value.items()}
-            if isinstance(value, list): return [redact(item) for item in value]
+            if isinstance(value, dict):
+                return {key: ("********" if key.lower() in sensitive and item else redact(item)) for key, item in value.items()}
+            if isinstance(value, list):
+                return [redact(item) for item in value]
             return value
         return redact(config or {})
     class Config:
