@@ -128,6 +128,9 @@ class FreeTTSService:
         """Generate speech using Piper TTS"""
         voice_name = voice or self.voice_map["piper"].get(language, self.voice_map["piper"]["default"])
 
+        if not await self._check_command(self.piper_path):
+            raise FileNotFoundError(f"Piper executable not found: {self.piper_path}")
+
         # Check if voice model exists, download if needed
         model_path = await self._ensure_piper_voice(voice_name)
 
