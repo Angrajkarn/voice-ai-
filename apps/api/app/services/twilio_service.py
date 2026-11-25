@@ -12,12 +12,18 @@ class TwilioService:
         self.account_sid = account_sid or settings.TWILIO_ACCOUNT_SID
         self.auth_token = auth_token or settings.TWILIO_AUTH_TOKEN
         self.phone_number = phone_number or settings.TWILIO_PHONE_NUMBER
-        self.client = None
+        self._client: Client | None = None
         if self.account_sid and self.auth_token:
-            self.client = Client(self.account_sid, self.auth_token)
+            self._client = Client(self.account_sid, self.auth_token)
+
+    @property
+    def client(self) -> Client:
+        if self._client is None:
+            raise ValueError("Twilio not configured")
+        return self._client
 
     def is_configured(self) -> bool:
-        return self.client is not None
+        return self._client is not None
 
     async def make_call(
         self,
