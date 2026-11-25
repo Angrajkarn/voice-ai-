@@ -27,7 +27,7 @@ export default function LoginPage() {
 
   async function handleEmailSignIn(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setNotice(''); setLoading(true);
-    try { await loginWithEmail(email, password); router.replace(destination); router.refresh(); }
+    try { await loginWithEmail(email, password); router.replace(getDestination()); router.refresh(); }
     catch (error) { setNotice(error instanceof Error ? error.message : 'Sign-in failed. Please try again.'); }
     finally { setLoading(false); }
   }
