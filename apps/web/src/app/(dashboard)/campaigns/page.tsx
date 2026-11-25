@@ -17,7 +17,7 @@ import {
   Search,
   Play,
   Pause,
-  Stop,
+  Square,
   RotateCcw,
   Trash2,
   Edit,
@@ -42,8 +42,8 @@ const mockCampaigns = [
 const statusActions: Record<string, { icon: React.ReactNode; label: string; variant: 'default' | 'outline' | 'ghost' }[]> = {
   DRAFT: [{ icon: <Play className="h-4 w-4" />, label: 'Start', variant: 'default' }, { icon: <Edit className="h-4 w-4" />, label: 'Edit', variant: 'outline' }, { icon: <Trash2 className="h-4 w-4" />, label: 'Delete', variant: 'ghost' }],
   READY: [{ icon: <Play className="h-4 w-4" />, label: 'Start', variant: 'default' }, { icon: <Pause className="h-4 w-4" />, label: 'Pause', variant: 'outline' }, { icon: <Edit className="h-4 w-4" />, label: 'Edit', variant: 'ghost' }],
-  RUNNING: [{ icon: <Pause className="h-4 w-4" />, label: 'Pause', variant: 'default' }, { icon: <Stop className="h-4 w-4" />, label: 'Stop', variant: 'outline' }, { icon: <BarChart2 className="h-4 w-4" />, label: 'Monitor', variant: 'ghost' }],
-  PAUSED: [{ icon: <Play className="h-4 w-4" />, label: 'Resume', variant: 'default' }, { icon: <Stop className="h-4 w-4" />, label: 'Stop', variant: 'outline' }, { icon: <Edit className="h-4 w-4" />, label: 'Edit', variant: 'ghost' }],
+  RUNNING: [{ icon: <Pause className="h-4 w-4" />, label: 'Pause', variant: 'default' }, { icon: <Square className="h-4 w-4" />, label: 'Stop', variant: 'outline' }, { icon: <BarChart2 className="h-4 w-4" />, label: 'Monitor', variant: 'ghost' }],
+  PAUSED: [{ icon: <Play className="h-4 w-4" />, label: 'Resume', variant: 'default' }, { icon: <Square className="h-4 w-4" />, label: 'Stop', variant: 'outline' }, { icon: <Edit className="h-4 w-4" />, label: 'Edit', variant: 'ghost' }],
   COMPLETED: [{ icon: <RotateCcw className="h-4 w-4" />, label: 'Restart', variant: 'outline' }, { icon: <BarChart2 className="h-4 w-4" />, label: 'View Report', variant: 'ghost' }],
   STOPPED: [{ icon: <RotateCcw className="h-4 w-4" />, label: 'Restart', variant: 'default' }, { icon: <Edit className="h-4 w-4" />, label: 'Edit', variant: 'outline' }],
 };
