@@ -28,7 +28,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { cn, formatDuration, formatRelativeTime, getStatusColor } from '@/lib/utils';
-import { customersApi, callsApi, campaignsApi } from '@/lib/api';
+import { api, callsApi, campaignsApi } from '@/lib/api';
 
 const mockMetrics = [
   { name: 'Total Customers', value: '1,234', change: '+12%', icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-100 dark:bg-blue-900/30' },
@@ -52,25 +52,25 @@ export default function DashboardPage() {
   React.useEffect(() => {
     let mounted = true;
     const loadDashboard = async () => {
-      const [customersResult, callsResult, campaignsResult] = await Promise.allSettled([
-        customersApi.list({ page: 1, pageSize: 50 }),
+      const [analyticsResult, callsResult, campaignsResult] = await Promise.allSettled([
+        api.get<any>('/analytics/dashboard'),
         callsApi.list({ page: 1, pageSize: 50 }),
         campaignsApi.list({ page: 1, pageSize: 50 }),
       ]);
       if (!mounted) return;
-      const customerPayload: any = customersResult.status === 'fulfilled' ? customersResult.value : {};
+      const analyticsPayload: any = analyticsResult.status === 'fulfilled' ? analyticsResult.value : {};
       const callsPayload: any = callsResult.status === 'fulfilled' ? callsResult.value : {};
       const campaignPayload: any = campaignsResult.status === 'fulfilled' ? campaignsResult.value : {};
       const callRows = Array.isArray(callsPayload?.data) ? callsPayload.data : [];
       const campaignRows = Array.isArray(campaignPayload?.data) ? campaignPayload.data : [];
-      const totalCustomers = Number(customerPayload?.total ?? customerPayload?.data?.length ?? 0);
-      const totalCalls = Number(callsPayload?.total ?? callRows.length);
-      const completed = callRows.filter((call: any) => ['COMPLETED', 'ANSWERED'].includes(String(call.status || '').toUpperCase())).length;
-      const failed = callRows.filter((call: any) => ['FAILED', 'ERROR'].includes(String(call.status || '').toUpperCase())).length;
-      const answered = callRows.filter((call: any) => !['NO_ANSWER', 'BUSY', 'FAILED', 'CANCELLED'].includes(String(call.status || '').toUpperCase())).length;
-      const interested = callRows.filter((call: any) => ['HOT', 'WARM', 'INTERESTED'].includes(String(call.interest_level || call.interest || '').toUpperCase())).length;
-      const hot = callRows.filter((call: any) => String(call.interest_level || call.interest || '').toUpperCase() === 'HOT').length;
-      const callbackCount = callRows.filter((call: any) => Boolean(call.callback_at || call.callback_id)).length;
+      const totalCustomers = Number(analyticsPayload?.total_customers || 0);
+      const totalCalls = Number(analyticsPayload?.total_calls || 0);
+      const completed = Number(analyticsPayload?.completed_calls || 0);
+      const failed = Number(analyticsPayload?.failed_calls || 0);
+      const answered = Number(analyticsPayload?.answered_calls || 0);
+      const interested = Number(analyticsPayload?.interested_customers || 0);
+      const hot = Number(analyticsPayload?.hot_leads || 0);
+      const callbackCount = Number(analyticsPayload?.callbacks_scheduled || 0);
       const values = [totalCustomers, totalCalls, completed, failed, answered, interested, hot, callbackCount];
       setMetrics(mockMetrics.map((item, index) => ({ ...item, value: values[index].toLocaleString('en-IN'), change: 'Live' })));
       setRecentCalls(callRows.slice(0, 8).map((call: any) => ({
@@ -90,7 +90,7 @@ export default function DashboardPage() {
         interested: Number(campaign.interested_count ?? campaign.interested ?? 0),
         callbacks: Number(campaign.callback_count ?? campaign.callbacks ?? 0),
       })));
-      const failures = [customersResult, callsResult, campaignsResult].filter(result => result.status === 'rejected').length;
+      const failures = [analyticsResult, callsResult, campaignsResult].filter(result => result.status === 'rejected').length;
       setDataError(failures === 3 ? 'The API could not load dashboard data. Check your backend connection and sign-in.' : failures ? 'Some dashboard data could not be loaded; available sections are shown.' : '');
       setDataLoading(false);
     };
