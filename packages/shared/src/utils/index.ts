@@ -1,8 +1,7 @@
 // Shared utility functions for AI Voice Calling Platform
 
-import { CryptoJS } from 'crypto-js';
+import CryptoJS from 'crypto-js';
 import { z } from 'zod';
-import type { PhoneSchema, EmailSchema, LanguageSchema, TimezoneSchema } from '../schemas';
 
 // ============================================
 // ENCRYPTION UTILITIES
@@ -121,7 +120,7 @@ export function isValidIndianMobile(phone: string): boolean {
 // ============================================
 
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay, addDays, setHours, setMinutes } from 'date-fns';
-import { utcToZonedTime, zonedTimeToUtc, formatInTimeZone } from 'date-fns-tz';
+import { toZonedTime, fromZonedTime, formatInTimeZone } from 'date-fns-tz';
 
 /**
  * Check if current time is within calling window for a timezone
@@ -132,7 +131,7 @@ export function isWithinCallingWindow(
   timezone: string,
   date = new Date()
 ): boolean {
-  const zonedDate = utcToZonedTime(date, timezone);
+  const zonedDate = toZonedTime(date, timezone);
   const [startHour, startMin] = callingWindowStart.split(':').map(Number);
   const [endHour, endMin] = callingWindowEnd.split(':').map(Number);
 
@@ -152,7 +151,7 @@ export function getNextCallingTime(
   skipWeekends: boolean,
   fromDate = new Date()
 ): Date {
-  let next = utcToZonedTime(fromDate, timezone);
+  let next = toZonedTime(fromDate, timezone);
   const [startHour, startMin] = callingWindowStart.split(':').map(Number);
 
   // If before window today, set to window start today
@@ -172,7 +171,7 @@ export function getNextCallingTime(
     }
   }
 
-  return zonedTimeToUtc(next, timezone);
+  return fromZonedTime(next, timezone);
 }
 
 /**
@@ -339,8 +338,14 @@ export function paginate<T>(
     sorted.sort((a, b) => {
       const aVal = (a as Record<string, unknown>)[sortBy];
       const bVal = (b as Record<string, unknown>)[sortBy];
-      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+      if (aVal === bVal) return 0;
+      if (aVal == null) return sortOrder === 'asc' ? -1 : 1;
+      if (bVal == null) return sortOrder === 'asc' ? 1 : -1;
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      const comparison = String(aVal).localeCompare(String(bVal));
+      return sortOrder === 'asc' ? comparison : -comparison;
       return 0;
     });
   }
