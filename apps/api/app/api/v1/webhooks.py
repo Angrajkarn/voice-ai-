@@ -1,6 +1,7 @@
 # Webhook API routes for Twilio and other providers
 
 from uuid import UUID
+from datetime import datetime
 import json
 
 from sqlalchemy import and_, or_, select
@@ -129,7 +130,8 @@ async def twilio_gather_webhook(
     if any(phrase in normalized for phrase in opt_out_phrases):
         call.customer.do_not_call = True
         call.customer.status = CustomerStatus.OPTED_OUT
-        call.customer.opt_out_at = datetime.utcnow() if hasattr(call.customer, "opt_out_at") else None
+        call.customer.opted_out_at = datetime.utcnow()
+        call.customer.opt_out_reason = speech_result
         await db.commit()
         response.say("I understand. We will not call you again. Goodbye.", voice=voice, language=language)
         response.hangup()
