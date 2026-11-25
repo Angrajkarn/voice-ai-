@@ -80,13 +80,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/dashboard/settings" onClick={() => setUserMenuOpen(false)}>
+                <Link href="/settings" onClick={() => setUserMenuOpen(false)}>
                   <User className="mr-2 h-4 w-4" />
                   Profile
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/dashboard/settings" onClick={() => setUserMenuOpen(false)}>
+                <Link href="/settings" onClick={() => setUserMenuOpen(false)}>
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
                 </Link>
