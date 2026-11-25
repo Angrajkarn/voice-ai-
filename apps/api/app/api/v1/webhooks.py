@@ -115,11 +115,14 @@ async def twilio_gather_webhook(
     speech_result = data.get("SpeechResult", "")
     confidence = data.get("Confidence", "0")
 
-    # Get call
+    # Get call and validate the signed Twilio request.
     service = CallService(db)
     call = await service.get_by_id(call_id)
     if not call:
         raise HTTPException(status_code=404, detail="Call not found")
+    twilio = await _twilio_for_campaign(db, campaign_id)
+    if not twilio.validate_webhook_signature(str(request.url), data, request.headers.get("X-Twilio-Signature", "")):
+        raise HTTPException(status_code=403, detail="Invalid Twilio signature")
 
     # In production, this would send to OpenAI Realtime API
     # For now, return a simple response
