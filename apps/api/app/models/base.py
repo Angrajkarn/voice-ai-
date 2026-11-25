@@ -1,35 +1,23 @@
-# Base model with common fields
-
 import uuid
+from datetime import datetime
 
-from sqlalchemy import Column, DateTime, func
+from sqlalchemy import DateTime, func
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import declarative_base, declarative_mixin, declared_attr
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
-# All ORM models must share this metadata so migrations and test databases
-# create the same tables.
-Base = declarative_base()
+class Base(DeclarativeBase):
+    """Shared declarative base for application ORM models."""
 
 
-@declarative_mixin
 class TimestampMixin:
-    """Mixin for created_at and updated_at timestamps"""
-
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
 
-@declarative_mixin
 class UUIDMixin:
-    """Mixin for UUID primary key"""
-
-    @declared_attr
-    def id(cls):
-        return Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False)
 
 
 class BaseModel(Base, TimestampMixin, UUIDMixin):
-    """Abstract base for all application ORM models"""
-
     __abstract__ = True
