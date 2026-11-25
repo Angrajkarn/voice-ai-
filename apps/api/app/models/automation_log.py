@@ -2,8 +2,8 @@
 
 
 from app.models.base import BaseModel
-from sqlalchemy import JSON, Column, DateTime, ForeignKey, Index, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, DateTime, ForeignKey, Index, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 
@@ -13,7 +13,7 @@ class AutomationLog(BaseModel):
     campaign_id = Column(UUID(as_uuid=True), ForeignKey("campaigns.id", ondelete="CASCADE"), nullable=False, index=True)
 
     trigger_type = Column(String(100), nullable=False)  # CALL_COMPLETED, CALLBACK_DUE, OPT_OUT, HOT_LEAD
-    trigger_data = Column(JSON, nullable=False)
+    trigger_data = Column(JSONB, nullable=False)
     action_type = Column(String(100), nullable=False)  # UPDATE_SHEETS, SCHEDULE_CALLBACK, NOTIFY_TEAM, ADD_TO_SUPPRESSION
     action_data = Column(JSON, nullable=False)
     status = Column(String(20), default="PENDING", nullable=False)  # PENDING, COMPLETED, FAILED
