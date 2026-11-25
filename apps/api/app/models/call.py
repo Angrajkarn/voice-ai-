@@ -37,13 +37,13 @@ class Call(BaseModel):
     initiated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     answered_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    duration = Column(Integer, nullable=True)  # seconds
-    billable_duration = Column(Integer, nullable=True)  # seconds
+    duration: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # seconds
+    billable_duration: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # seconds
 
     # Results
     disposition: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     failure_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    hangup_source = Column(String(50), nullable=True)  # customer, ai, system, network
+    hangup_source: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # customer, ai, system, network
 
     # AI Analysis
     interest_level: Mapped[InterestLevel] = mapped_column(SQLEnum(InterestLevel), default=InterestLevel.UNKNOWN, nullable=False)
@@ -51,7 +51,7 @@ class Call(BaseModel):
     objections: Mapped[list[str]] = mapped_column(ARRAY(Text), default=[], nullable=False)
     questions_asked: Mapped[list[str]] = mapped_column(ARRAY(Text), default=[], nullable=False)
     summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    sentiment = Column(String(20), nullable=True)  # positive, neutral, negative
+    sentiment: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # positive, neutral, negative
     requires_human_followup: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     human_followup_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     # Recording & Transcript

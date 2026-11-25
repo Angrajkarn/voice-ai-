@@ -27,7 +27,7 @@ class Customer(BaseModel):
     first_name: Mapped[str] = mapped_column(String(50), nullable=False)
     last_name: Mapped[str] = mapped_column(String(50), nullable=False)
     email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    phone = Column(String(20), nullable=False, index=True)  # E.164 format
+    phone: Mapped[str] = mapped_column(String(20), nullable=False, index=True)  # E.164 format
     phone_raw: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     company: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     location: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
