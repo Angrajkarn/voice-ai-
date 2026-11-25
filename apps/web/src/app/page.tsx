@@ -3,9 +3,8 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import {
-  ArrowRight, AudioLines, BarChart3, Bot, Check, ChevronDown, CirclePlay,
-  Command, Headphones, Menu, MessageSquareText, Mic2, PhoneCall, Radio,
-  ShieldCheck, Sparkles, Workflow, X, Zap,
+  ArrowRight, AudioLines, BarChart3, Bot, Check, CirclePlay,
+  Headphones, Menu, MessageSquareText, Radio, ShieldCheck, Sparkles, Workflow, X,
 } from 'lucide-react';
 
 const features = [
@@ -20,11 +19,6 @@ const steps = [
   { n: '02', title: 'Shape the conversation', body: 'Define your agent’s objective, approved guidance, voice and escalation rules.' },
   { n: '03', title: 'Launch with control', body: 'Manage campaigns, monitor activity and review outcomes as they happen.' },
 ];
-
-function Waveform() {
-  return <div className="va-wave" aria-hidden="true">{Array.from({ length:  forty }, (_, i) => <span key={i} style={{ '--i': i } as React.CSSProperties} />)}</div>;
-}
-const forty = 40;
 
 export default function HomePage() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -41,7 +35,7 @@ export default function HomePage() {
             <a className="va-nav-link" href="#platform">Platform</a><a className="va-nav-link" href="#how-it-works">How it works</a><a className="va-nav-link" href="#trust">Trust & control</a>
           </nav>
           <div className="hidden items-center gap-3 md:flex">
-            <Link href="/dashboard" className="px-4 py-2 text-sm font-medium text-slate-300 transition hover:text-white">Sign in</Link>
+            <Link href="/dashboard" className="px-4 py-2 text-sm font-medium text-slate-300 transition hover:text-white">Workspace</Link>
             <Link href="/dashboard" className="va-button va-button-small">Explore workspace <ArrowRight size={15} /></Link>
           </div>
           <button aria-label={menuOpen ? 'Close navigation' : 'Open navigation'} onClick={() => setMenuOpen(!menuOpen)} className="rounded-lg border border-white/10 p-2 text-slate-200 md:hidden">{menuOpen ? <X size={20} /> : <Menu size={20} />}</button>
