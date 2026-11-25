@@ -13,7 +13,7 @@ class AuditLog(BaseModel):
     entity_type = Column(String(100), nullable=False, index=True)  # User, Campaign, Customer, Call, Integration
     entity_id = Column(String(100), nullable=False, index=True)
     old_data = Column(JSONB, nullable=True)
-    new_data = Column(JSON, nullable=True)
+    new_data = Column(JSONB, nullable=True)
     metadata_json = Column("metadata", JSONB, default=dict, nullable=False)  # IP, user agent, etc.
 
     # Foreign keys
