@@ -245,11 +245,12 @@ class CustomerService:
                 None
             )
             if matched_key and row[matched_key]:
-                value: str | list[str] = row[matched_key].strip()
+                value = row[matched_key].strip()
                 if field == "phone":
                     value = self._normalize_phone(value)
                 elif field == "tags":
-                    value = [t.strip() for t in value.split(",") if t.strip()]
+                    customer[field] = [t.strip() for t in value.split(",") if t.strip()]
+                    continue
                 customer[field] = value
 
         # Validate required fields

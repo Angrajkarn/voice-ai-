@@ -206,8 +206,8 @@ class AnalyticsService:
 
         # Merge callback and opt-out data
         for day in daily_data:
-            day.callbacks_scheduled = callback_map.get(day.date, 0)
-            day.opt_outs = opt_out_map.get(day.date, 0)
+            day.callbacks_scheduled = callback_map.get(day.date, 0) or 0
+            day.opt_outs = opt_out_map.get(day.date, 0) or 0
 
         # Summary
         total_calls = sum(d.total_calls for d in daily_data)
@@ -377,14 +377,14 @@ class AnalyticsService:
                 "Company", "Location", "Language", "Status", "Interest Level",
                 "Call Attempts", "Last Call", "Next Callback", "Do Not Call", "Created At"
             ])
-            for c in customers:
+            for customer_record in customers:
                 writer.writerow([
-                    c.id, c.first_name, c.last_name, c.email or "", c.phone,
-                    c.company or "", c.location or "", c.language,
-                    c.status.value, c.interest_level.value, c.call_attempts,
-                    c.last_call_at.isoformat() if c.last_call_at else "",
-                    c.next_callback_at.isoformat() if c.next_callback_at else "",
-                    c.do_not_call, c.created_at.isoformat(),
+                    customer_record.id, customer_record.first_name, customer_record.last_name, customer_record.email or "", customer_record.phone,
+                    customer_record.company or "", customer_record.location or "", customer_record.language,
+                    customer_record.status.value, customer_record.interest_level.value, customer_record.call_attempts,
+                    customer_record.last_call_at.isoformat() if customer_record.last_call_at else "",
+                    customer_record.next_callback_at.isoformat() if customer_record.next_callback_at else "",
+                    customer_record.do_not_call, customer_record.created_at.isoformat(),
                 ])
 
         elif report_type == "campaigns":
@@ -396,12 +396,12 @@ class AnalyticsService:
                 "Campaign ID", "Name", "Status", "Total Customers", "Completed Calls",
                 "Failed Calls", "Interested", "Callbacks", "Opt-outs", "Success Rate", "Created At"
             ])
-            for c in campaigns:
+            for campaign_record in campaigns:
                 writer.writerow([
-                    c.id, c.name, c.status.value, c.total_customers, c.completed_calls,
-                    c.failed_calls, c.interested_count, c.callback_count, c.opt_out_count,
-                    round((c.completed_calls / c.total_customers * 100) if c.total_customers > 0 else 0, 2),
-                    c.created_at.isoformat(),
+                    campaign_record.id, campaign_record.name, campaign_record.status.value, campaign_record.total_customers, campaign_record.completed_calls,
+                    campaign_record.failed_calls, campaign_record.interested_count, campaign_record.callback_count, campaign_record.opt_out_count,
+                    round((campaign_record.completed_calls / campaign_record.total_customers * 100) if campaign_record.total_customers > 0 else 0, 2),
+                    campaign_record.created_at.isoformat(),
                 ])
 
         return output.getvalue().encode("utf-8")
