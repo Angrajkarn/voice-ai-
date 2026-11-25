@@ -45,7 +45,7 @@ elif database_url.startswith('postgresql+psycopg2://'):
 config.set_main_option('sqlalchemy.url', database_url)
 
 # Import models after setting the URL
-from app.db.session import Base
+from app.db.session import Base  # noqa: E402
 
 # target_metadata for 'autogenerate' support
 target_metadata = Base.metadata

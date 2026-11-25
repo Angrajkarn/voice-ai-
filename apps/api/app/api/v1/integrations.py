@@ -13,6 +13,7 @@ from app.schemas.integration import (
 )
 from app.services.integration_service import IntegrationService
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])

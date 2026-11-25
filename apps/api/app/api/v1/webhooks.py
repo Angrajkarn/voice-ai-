@@ -3,9 +3,10 @@
 from uuid import UUID
 
 from app.db.session import get_db
+from app.services.ai_agent_service import AIAgentService
 from app.services.call_service import CallService
 from app.services.twilio_service import TwilioService
-from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -44,7 +45,7 @@ async def twilio_voice_webhook(
     # Get AI agent configuration
     campaign = call.campaign
     ai_service = AIAgentService()
-    session_config = await ai_service.get_realtime_session_config(campaign, call.customer)
+    await ai_service.get_realtime_session_config(campaign, call.customer)
 
     # For now, use a simple TwiML flow
     # In production, this would connect to OpenAI Realtime API via Media Streams

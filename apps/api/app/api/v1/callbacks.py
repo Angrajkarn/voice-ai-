@@ -5,6 +5,7 @@ from uuid import UUID
 
 from app.core.dependencies import get_current_organization, get_current_user
 from app.db.session import get_db
+from app.models.campaign import Campaign
 from app.models.organization import Organization
 from app.models.user import User
 from app.schemas.callback import (
@@ -135,7 +136,6 @@ async def get_due_callbacks(
 ):
     service = CallbackService(db)
     # Verify campaign belongs to organization
-    from app.models.campaign import Campaign
     campaign = await db.scalar(
         select(Campaign).where(
             and_(Campaign.id == campaign_id, Campaign.organization_id == organization.id)

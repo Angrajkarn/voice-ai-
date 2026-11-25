@@ -4,6 +4,7 @@ from datetime import date, datetime, timedelta
 from uuid import UUID
 
 from app.models.call import Call
+from app.models.campaign_customer import CampaignCustomer
 from app.models.callback import Callback
 from app.models.campaign import Campaign
 from app.models.customer import Customer
@@ -11,8 +12,10 @@ from app.models.enums import CallbackStatus, CallStatus, CustomerStatus, Interes
 from app.schemas.analytics import (
     CallAnalytics,
     CampaignAnalytics,
+    CampaignAnalyticsSummary,
     DashboardMetrics,
     OrganizationAnalytics,
+    OrganizationAnalyticsSummary,
 )
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession

@@ -155,7 +155,7 @@ async def test_bulk_import_with_duplicates(db_session, test_organization, sample
             CustomerCreate(**{
                 **sample_customer_data,
                 "first_name": "Import1",
-                "phone": "+15551234567",  # Same as existing
+                "phone": sample_customer_data["phone"],  # Same as existing
             }),
             CustomerCreate(**{
                 **sample_customer_data,
@@ -221,4 +221,4 @@ async def test_schedule_callback(db_session, test_organization, test_customer, t
     )
     callback = callbacks.scalar_one_or_none()
     assert callback is not None
-    assert callback.scheduled_at == callback_date
+    assert callback.scheduled_at.replace(tzinfo=None) == callback_date
