@@ -57,7 +57,7 @@ class CampaignBase(BaseModel):
 
 
 class CampaignCreate(CampaignBase):
-    customer_ids: list[UUID] = Field(..., min_length=1, max_length=1000)
+    customer_ids: list[UUID] = Field(default_factory=list, max_length=1000)
 
 
 class CampaignUpdate(BaseModel):
