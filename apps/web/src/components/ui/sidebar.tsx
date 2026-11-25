@@ -54,7 +54,7 @@ export function Sidebar({ collapsed = false, onToggle }: { collapsed?: boolean; 
         {/* Logo */}
         <div className={cn('flex h-16 items-center justify-between border-b px-4', collapsed && 'justify-center')}>
           {!collapsed && (
-            <Link href="/dashboard" className="flex items-center space-x-2">
+            <Link href="/" className="flex items-center space-x-2">
               <Phone className="h-8 w-8 text-primary" />
               <span className="font-bold text-xl">VoiceAI</span>
             </Link>
@@ -99,7 +99,7 @@ export function Sidebar({ collapsed = false, onToggle }: { collapsed?: boolean; 
         <div className={cn('border-t p-3', collapsed && 'hidden')}>
           <div className="rounded-lg bg-muted p-3 text-center">
             <p className="text-xs text-muted-foreground">
-              Need help? <a href="/docs" className="text-primary hover:underline">Documentation</a>
+              Need help? <a href="https://github.com/Angrajkarn/voice-ai-#readme" target="_blank" rel="noreferrer" className="text-primary hover:underline">Documentation</a>
             </p>
           </div>
         </div>
@@ -136,7 +136,7 @@ export function MobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: (
       >
         <div className="flex h-full flex-col">
           <div className="flex h-16 items-center justify-between border-b px-4">
-            <Link href="/dashboard" className="flex items-center space-x-2" onClick={onClose}>
+            <Link href="/" className="flex items-center space-x-2" onClick={onClose}>
               <Phone className="h-8 w-8 text-primary" />
               <span className="font-bold text-xl">VoiceAI</span>
             </Link>
@@ -147,7 +147,7 @@ export function MobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
           <nav className="flex-1 space-y-1 p-3 overflow-y-auto">
             {navigation.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+              const isActive = item.href === '/' ? pathname === '/' : pathname === item.href || pathname.startsWith(item.href + '/');
               return (
                 <Link
                   key={item.name}
