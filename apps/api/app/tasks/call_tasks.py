@@ -107,21 +107,42 @@ def process_call_queue():
     """Process one due outbound call per running campaign on each beat tick."""
     async def _process():
         async with AsyncSessionLocal() as db:
-            campaigns = await db.execute(select(Campaign).where(Campaign.status == CampaignStatus.RUNNING))
-            results, call_service = [], CallService(db)
+            campaigns = await db.execute(
+                select(Campaign).where(Campaign.status == CampaignStatus.RUNNING)
+            )
+            results = []
+            call_service = CallService(db)
             now = datetime.utcnow()
             today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
             for campaign in campaigns.scalars().all():
-                if not call_service._is_within_calling_window(campaign): continue
-                calls_today = await db.scalar(select(func.count(Call.id)).where(and_(Call.campaign_id == campaign.id, Call.initiated_at >= today_start))) or 0
-                if calls_today >= campaign.max_calls_per_day: continue
-                last_initiated = await db.scalar(select(func.max(Call.initiated_at)).where(and_(Call.campaign_id == campaign.id, Call.initiated_at.is_not(None))))
-                if last_initiated and (now - last_initiated.replace(tzinfo=None)).total_seconds() < campaign.delay_between_calls: continue
+                if not call_service._is_within_calling_window(campaign):
+                    continue
+                calls_today = await db.scalar(
+                    select(func.count(Call.id)).where(
+                        and_(Call.campaign_id == campaign.id, Call.initiated_at >= today_start)
+                    )
+                ) or 0
+                if calls_today >= campaign.max_calls_per_day:
+                    continue
+                last_initiated = await db.scalar(
+                    select(func.max(Call.initiated_at)).where(
+                        and_(Call.campaign_id == campaign.id, Call.initiated_at.is_not(None))
+                    )
+                )
+                if last_initiated and (now - last_initiated.replace(tzinfo=None)).total_seconds() < campaign.delay_between_calls:
+                    continue
                 call = await call_service.get_next_queued_call(campaign.id)
-                if not call: continue
+                if not call:
+                    continue
                 success = await call_service.initiate_call(call.id)
-                results.append({"campaign_id": str(campaign.id), "call_id": str(call.id), "success": success})
+                results.append({
+                    "campaign_id": str(campaign.id),
+                    "call_id": str(call.id),
+                    "success": success,
+                })
             return {"processed": len(results), "results": results}
+
     return asyncio.run(_process())
 
 
