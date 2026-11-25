@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     CELERY_TASK_TIME_LIMIT: int = 30 * 60  # 30 minutes
 
     # Security
-    SECRET_KEY: str = "your-secret-key-change-in-production"
+    SECRET_KEY: str = "your-secret-key-change-in-production"\n    FIREBASE_PROJECT_ID: str | None = None\n    FIREBASE_SERVICE_ACCOUNT_JSON: str | None = None
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
