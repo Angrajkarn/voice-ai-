@@ -15,7 +15,7 @@ class CallTranscript(BaseModel):
     segments = Column(JSONB, nullable=False)  # Array of {speaker, text, start_time, end_time, confidence, language}
     language = Column(String(10), default="en-IN", nullable=False)
     word_count = Column(Integer, default=0, nullable=False)
-    duration = Column(Float, nullable=False)  # seconds (stored as integer for precision)
+    duration = Column(Float, nullable=False)  # seconds
 
     # Relationships
     call = relationship("Call", back_populates="transcript")
