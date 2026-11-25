@@ -15,7 +15,7 @@ class AutomationLog(BaseModel):
     trigger_type = Column(String(100), nullable=False)  # CALL_COMPLETED, CALLBACK_DUE, OPT_OUT, HOT_LEAD
     trigger_data = Column(JSONB, nullable=False)
     action_type = Column(String(100), nullable=False)  # UPDATE_SHEETS, SCHEDULE_CALLBACK, NOTIFY_TEAM, ADD_TO_SUPPRESSION
-    action_data = Column(JSON, nullable=False)
+    action_data = Column(JSONB, nullable=False)
     status = Column(String(20), default="PENDING", nullable=False)  # PENDING, COMPLETED, FAILED
     error = Column(Text, nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
