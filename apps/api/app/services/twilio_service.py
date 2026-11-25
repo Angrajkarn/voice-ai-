@@ -8,10 +8,10 @@ from twilio.rest import Client
 
 
 class TwilioService:
-    def __init__(self):
-        self.account_sid = settings.TWILIO_ACCOUNT_SID
-        self.auth_token = settings.TWILIO_AUTH_TOKEN
-        self.phone_number = settings.TWILIO_PHONE_NUMBER
+    def __init__(self, account_sid: str | None = None, auth_token: str | None = None, phone_number: str | None = None):
+        self.account_sid = account_sid or settings.TWILIO_ACCOUNT_SID
+        self.auth_token = auth_token or settings.TWILIO_AUTH_TOKEN
+        self.phone_number = phone_number or settings.TWILIO_PHONE_NUMBER
         self.client = None
         if self.account_sid and self.auth_token:
             self.client = Client(self.account_sid, self.auth_token)
