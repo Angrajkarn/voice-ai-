@@ -4,8 +4,9 @@
 import pytest
 from app.core.config import settings
 from app.models.integration import Integration
+from app.models.consent_record import ConsentRecord
 from app.models.campaign_customer import CampaignCustomer
-from app.models.enums import CampaignStatus, IntegrationType
+from app.models.enums import CampaignStatus, ConsentMethod, ConsentStatus, IntegrationType
 from app.schemas.campaign import CampaignCreate, CampaignUpdate
 from app.services.campaign_service import CampaignService
 
@@ -91,6 +92,14 @@ async def test_campaign_lifecycle(db_session, test_organization, test_user, test
         is_active=True,
     ))
     db_session.add(CampaignCustomer(campaign_id=test_campaign.id, customer_id=test_customer.id))
+    db_session.add(ConsentRecord(
+        phone=test_customer.phone,
+        status=ConsentStatus.GRANTED,
+        method=ConsentMethod.WEB_FORM,
+        organization_id=test_organization.id,
+        customer_id=test_customer.id,
+        granted_at=__import__("datetime").datetime.utcnow(),
+    ))
     await db_session.commit()
 
     # Start campaign
