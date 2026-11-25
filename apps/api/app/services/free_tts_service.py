@@ -331,16 +331,36 @@ class FreeTTSService:
                     cmd.extend(["-v", voice])
 
             elif system == "Windows":
-                # Use PowerShell with SAPI
-                ps_script = f'''
+                # Pass customer text through stdin; never interpolate it into a shell script.
+                ps_script = """
                 Add-Type -AssemblyName System.Speech
                 $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
-                $synth.SetOutputToWaveFile("{output_path}")
-                $synth.Rate = {int((speed - 1) * 10)}
-                $synth.Speak("{text.replace('"', '""')}")
+                $synth.SetOutputToWaveFile($env:VOICEAI_TTS_OUTPUT)
+                $synth.Rate = [int]$env:VOICEAI_TTS_RATE
+                $text = [Console]::In.ReadToEnd()
+                $synth.Speak($text)
                 $synth.Dispose()
-                '''
-                cmd = ["powershell", "-Command", ps_script]
+                """
+                process = await asyncio.create_subprocess_exec(
+                    "powershell",
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-Command",
+                    ps_script,
+                    stdin=asyncio.subprocess.PIPE,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                    env={
+                        **os.environ,
+                        "VOICEAI_TTS_OUTPUT": output_path,
+                        "VOICEAI_TTS_RATE": str(int((speed - 1) * 10)),
+                    },
+                )
+                stdout, stderr = await process.communicate(input=text.encode("utf-8"))
+                if process.returncode != 0:
+                    raise Exception(f"System TTS failed: {stderr.decode()}")
+                with open(output_path, "rb") as f:
+                    return f.read()
 
             else:  # Linux - try festival or spd-say
                 if await self._check_command("festival"):
