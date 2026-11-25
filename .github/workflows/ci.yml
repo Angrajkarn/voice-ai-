@@ -78,19 +78,9 @@ jobs:
         run: cd apps/web && npm install --legacy-peer-deps
 
       - name: Generate Prisma client
-        run: |
-          mkdir -p apps/web/prisma
-          cat > apps/web/prisma/schema.prisma << 'HEREDOC'
-          datasource db {
-            provider = "postgresql"
-            url      = env("DATABASE_URL")
-          }
-
-          generator client {
-            provider = "prisma-client-js"
-          }
-          HEREDOC
-          cd apps/web && npx prisma generate
+        run: npx prisma generate --schema=packages/shared/prisma/schema.prisma
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/voiceai_test
 
       - name: Run tests
         run: cd apps/web && npm run test
