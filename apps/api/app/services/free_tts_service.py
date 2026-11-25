@@ -7,11 +7,14 @@ import subprocess
 import tempfile
 import os
 import json
+import logging
 import base64
 from pathlib import Path
 import httpx
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class FreeTTSService:
@@ -73,7 +76,13 @@ class FreeTTSService:
 
         # Generate audio based on engine
         if self.engine == "piper":
-            audio = await self._piper_tts(text, language, voice, speed)
+            try:
+                audio = await self._piper_tts(text, language, voice, speed)
+            except Exception:
+                if not await self._check_command("espeak-ng"):
+                    raise
+                logger.warning("Piper TTS failed; falling back to eSpeak NG", exc_info=True)
+                audio = await self._espeak_tts(text, language, None, speed)
         elif self.engine == "coqui":
             audio = await self._coqui_tts(text, language, voice, speed)
         elif self.engine == "espeak":
@@ -243,7 +252,9 @@ class FreeTTSService:
                     os.unlink(output_path)
 
         except ImportError:
-            # Coqui TTS not installed, fallback to Piper
+            # Coqui TTS is optional; use installed eSpeak before trying Piper.
+            if await self._check_command("espeak-ng"):
+                return await self._espeak_tts(text, language, None, speed)
             return await self._piper_tts(text, language, voice, speed)
 
     # ============================================
