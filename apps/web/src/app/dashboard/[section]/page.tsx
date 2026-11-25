@@ -67,11 +67,7 @@ export default function SectionPage() {
       } else if (config.endpoint) payload = await api.get<any>(config.endpoint);
       else if (section === 'settings') payload = await api.get<any>('/settings/profile');
       else if (section === 'analytics') payload = await api.get<any>('/analytics/organization', { period: 'daily', days: 30 });
-      else {
-        const org = await api.get<any>('/organizations/current');
-        if (!org?.id) throw new Error('Your workspace could not be resolved. Please sign in again.');
-        payload = await api.get<any>('/integrations', { organizationId: org.id });
-      }
+      else payload = await api.get<any>('/integrations');
       setRecords(recordsFrom(payload));
       setLastUpdated(new Date());
     } catch (e) {
