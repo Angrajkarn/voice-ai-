@@ -146,7 +146,7 @@ class CallService:
                     and_(
                         Integration.campaign_id == call.campaign_id,
                         Integration.type == IntegrationType.TWILIO,
-                        Integration.is_active == True,
+                        Integration.is_active.is_(True),
                     )
                 )
             )

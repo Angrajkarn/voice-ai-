@@ -172,7 +172,7 @@ class CallbackService:
             select(Callback).where(
                 and_(
                     Callback.status == CallbackStatus.SCHEDULED,
-                    Callback.reminder_sent == False,
+                    Callback.reminder_sent.is_(False),
                     Callback.scheduled_at <= reminder_time,
                     Callback.scheduled_at > now,
                 )

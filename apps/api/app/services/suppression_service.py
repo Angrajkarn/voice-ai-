@@ -35,7 +35,7 @@ class SuppressionService:
                 and_(
                     SuppressionList.organization_id == organization_id,
                     SuppressionList.phone == phone,
-                    SuppressionList.is_active == True,
+                    SuppressionList.is_active.is_(True),
                 )
             )
         )
@@ -90,7 +90,7 @@ class SuppressionService:
                 and_(
                     SuppressionList.organization_id == organization_id,
                     SuppressionList.phone == phone,
-                    SuppressionList.is_active == True,
+                    SuppressionList.is_active.is_(True),
                     or_(
                         SuppressionList.expires_at.is_(None),
                         SuppressionList.expires_at > datetime.utcnow(),
@@ -110,7 +110,7 @@ class SuppressionService:
         query = select(SuppressionList).where(SuppressionList.organization_id == organization_id)
 
         if active_only:
-            query = query.where(SuppressionList.is_active == True)
+            query = query.where(SuppressionList.is_active.is_(True))
 
         # Count total
         from sqlalchemy import func
@@ -153,7 +153,7 @@ class SuppressionService:
                     and_(
                         SuppressionList.organization_id == organization_id,
                         SuppressionList.phone == phone,
-                        SuppressionList.is_active == True,
+                        SuppressionList.is_active.is_(True),
                     )
                 )
             )

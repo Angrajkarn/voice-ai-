@@ -42,7 +42,7 @@ class CustomerService:
                 and_(
                     SuppressionList.organization_id == organization_id,
                     SuppressionList.phone == phone,
-                    SuppressionList.is_active == True,
+                    SuppressionList.is_active.is_(True),
                 )
             )
         )
@@ -111,7 +111,7 @@ class CustomerService:
                         and_(
                             SuppressionList.organization_id == organization_id,
                             SuppressionList.phone == phone,
-                            SuppressionList.is_active == True,
+                            SuppressionList.is_active.is_(True),
                         )
                     )
                 )

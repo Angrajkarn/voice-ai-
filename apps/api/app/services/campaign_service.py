@@ -196,7 +196,7 @@ class CampaignService:
                 and_(
                     Integration.organization_id == organization_id,
                     Integration.type == IntegrationType.TWILIO,
-                    Integration.is_active == True,
+                    Integration.is_active.is_(True),
                 )
             )
         )
@@ -209,7 +209,7 @@ class CampaignService:
                 and_(
                     Integration.organization_id == organization_id,
                     Integration.type == IntegrationType.OPENAI,
-                    Integration.is_active == True,
+                    Integration.is_active.is_(True),
                 )
             )
         )

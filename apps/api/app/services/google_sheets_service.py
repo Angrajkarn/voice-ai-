@@ -70,7 +70,7 @@ class GoogleSheetsService:
                 and_(
                     Integration.campaign_id == campaign.id,
                     Integration.type == IntegrationType.GOOGLE_SHEETS,
-                    Integration.is_active == True,
+                    Integration.is_active.is_(True),
                 )
             )
         )
@@ -135,7 +135,7 @@ class GoogleSheetsService:
                 and_(
                     Integration.campaign_id == campaign.id,
                     Integration.type == IntegrationType.GOOGLE_SHEETS,
-                    Integration.is_active == True,
+                    Integration.is_active.is_(True),
                 )
             )
         )
@@ -287,7 +287,7 @@ class GoogleSheetsService:
                 and_(
                     Integration.campaign_id == campaign.id,
                     Integration.type == IntegrationType.GOOGLE_SHEETS,
-                    Integration.is_active == True,
+                    Integration.is_active.is_(True),
                 )
             )
         )

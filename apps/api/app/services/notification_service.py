@@ -39,7 +39,7 @@ class NotificationService:
         await self.db.refresh(notification)
         return notification
 
-    async def create_hot_lead_notification(self, call) -> Notification:
+    async def create_hot_lead_notification(self, call) -> Notification | None:
         """Create notification for hot lead"""
         # Get campaign owner/managers
         from app.models.enums import UserRole
@@ -50,7 +50,7 @@ class NotificationService:
                 and_(
                     User.organization_id == call.campaign.organization_id,
                     User.role.in_([UserRole.ADMIN, UserRole.MANAGER]),
-                    User.is_active == True,
+                    User.is_active.is_(True),
                 )
             )
         )
@@ -76,7 +76,7 @@ class NotificationService:
 
         return notifications[0] if notifications else None
 
-    async def create_callback_notification(self, callback) -> Notification:
+    async def create_callback_notification(self, callback) -> Notification | None:
         """Create notification for scheduled callback"""
         if callback.assignee_id:
             return await self.create(
@@ -93,7 +93,7 @@ class NotificationService:
                 campaign_id=callback.campaign_id,
             )
 
-    async def create_human_followup_notification(self, call) -> Notification:
+    async def create_human_followup_notification(self, call) -> Notification | None:
         """Create notification for human follow-up required"""
         from app.models.enums import UserRole
         from app.models.user import User
@@ -103,7 +103,7 @@ class NotificationService:
                 and_(
                     User.organization_id == call.campaign.organization_id,
                     User.role.in_([UserRole.ADMIN, UserRole.MANAGER]),
-                    User.is_active == True,
+                    User.is_active.is_(True),
                 )
             )
         )
@@ -138,7 +138,7 @@ class NotificationService:
         query = select(Notification).where(Notification.user_id == user_id)
 
         if unread_only:
-            query = query.where(Notification.is_read == False)
+            query = query.where(Notification.is_read.is_(False))
 
         count_query = select(func.count()).select_from(query.subquery())
         total = await self.db.scalar(count_query) or 0
@@ -174,7 +174,7 @@ class NotificationService:
             select(Notification).where(
                 and_(
                     Notification.user_id == user_id,
-                    Notification.is_read == False,
+                    Notification.is_read.is_(False),
                 )
             )
         )
@@ -192,7 +192,7 @@ class NotificationService:
             select(func.count(Notification.id)).where(
                 and_(
                     Notification.user_id == user_id,
-                    Notification.is_read == False,
+                    Notification.is_read.is_(False),
                 )
             )
         )
