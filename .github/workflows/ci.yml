@@ -32,7 +32,7 @@ jobs:
         run: cd apps/web && npm install --legacy-peer-deps
 
       - name: Run frontend lint
-        run: cd apps/web && npx next lint --dir .
+        run: cd apps/web && npm run lint
 
       - name: Run frontend typecheck
         run: cd apps/web && npm run typecheck
@@ -167,7 +167,8 @@ jobs:
       - name: Run tests
         run: |
           cd apps/api
-          PYTHONPATH=/home/runner/work/voice-ai-/voice-ai- \
+          OPENAI_API_KEY=ci-test-key \
+          PYTHONPATH="$GITHUB_WORKSPACE/apps/api" \
           DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/voiceai_test \
           pytest -v --cov=app --cov-report=xml --cov-report=term-missing
 
