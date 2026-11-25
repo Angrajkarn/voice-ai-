@@ -3,7 +3,7 @@
 from celery import shared_task
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy import and_, select
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import async_sessionmaker
 from typing import List
 from uuid import UUID
 from datetime import datetime
@@ -15,7 +15,7 @@ from app.services.call_service import CallService
 
 
 engine = create_async_engine(settings.DATABASE_URL, pool_pre_ping=True)
-AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 
 @shared_task

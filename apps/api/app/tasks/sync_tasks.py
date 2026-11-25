@@ -2,7 +2,7 @@
 
 from celery import shared_task
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy import select, and_
 from typing import List
 from uuid import UUID
@@ -18,7 +18,7 @@ from app.models.campaign import Campaign
 
 
 engine = create_async_engine(settings.DATABASE_URL, pool_pre_ping=True)
-AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 
 @shared_task

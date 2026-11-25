@@ -1,7 +1,16 @@
 # Custom exceptions
 
+from typing import Any
+
+
 class AppException(Exception):
-    def __init__(self, message: str, code: str = "APP_ERROR", status_code: int = 400, details: dict = None):
+    def __init__(
+        self,
+        message: str,
+        code: str = "APP_ERROR",
+        status_code: int = 400,
+        details: dict[str, Any] | None = None,
+    ):
         self.message = message
         self.code = code
         self.status_code = status_code
@@ -10,7 +19,7 @@ class AppException(Exception):
 
 
 class ValidationException(AppException):
-    def __init__(self, message: str, details: dict = None):
+    def __init__(self, message: str, details: dict[str, Any] | None = None):
         super().__init__(message, "VALIDATION_ERROR", 400, details)
 
 
@@ -35,14 +44,14 @@ class ConflictException(AppException):
 
 
 class RateLimitException(AppException):
-    def __init__(self, message: str = "Rate limit exceeded", retry_after: int = None):
-        details = {"retry_after": retry_after} if retry_after else {}
+    def __init__(self, message: str = "Rate limit exceeded", retry_after: int | None = None):
+        details = {"retry_after": retry_after} if retry_after is not None else {}
         super().__init__(message, "RATE_LIMIT", 429, details)
 
 
 class ExternalServiceException(AppException):
-    def __init__(self, service: str, message: str, original_error: Exception = None):
-        details = {"service": service}
-        if original_error:
+    def __init__(self, service: str, message: str, original_error: Exception | None = None):
+        details: dict[str, Any] = {"service": service}
+        if original_error is not None:
             details["original_error"] = str(original_error)
         super().__init__(f"{service} error: {message}", "EXTERNAL_SERVICE_ERROR", 502, details)

@@ -7,10 +7,10 @@ from app.core.config import settings
 from celery import shared_task
 from sqlalchemy import and_, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 engine = create_async_engine(settings.DATABASE_URL, pool_pre_ping=True)
-AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 
 @shared_task
