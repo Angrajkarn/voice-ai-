@@ -1,7 +1,10 @@
 import type { NextConfig } from 'next';
+import path from 'node:path';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  output: 'standalone',
+  outputFileTracingRoot: path.join(process.cwd(), '../..'),
   transpilePackages: ['@voice-platform/shared'],
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
@@ -19,24 +22,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  async headers() {
-    return [
-      {
-        source: '/api/:path*',
-        headers: [
-          { key: 'Access-Control-Allow-Credentials', value: 'true' },
-          { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET,DELETE,PATCH,POST,PUT' },
-          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization' },
-        ],
-      },
-    ];
-  },
   async rewrites() {
     return [
       {
-        source: '/api/python/:path*',
-        destination: `${process.env.PYTHON_API_URL || 'http://localhost:8000'}/:path*`,
+        source: '/api/v1/:path*',
+        destination: `${process.env.PYTHON_API_URL || 'http://localhost:8000'}/api/v1/:path*`,
       },
     ];
   },
