@@ -41,10 +41,14 @@ export async function GET(request: NextRequest) {
       ];
     }
 
+    const sortBy = validatedParams.sortBy === 'name' || validatedParams.sortBy === 'status'
+      ? validatedParams.sortBy
+      : 'createdAt';
+
     const [campaigns, total] = await Promise.all([
       prisma.campaign.findMany({
         where,
-        orderBy: { [validatedParams.sortBy || 'createdAt']: validatedParams.sortOrder },
+        orderBy: { [sortBy]: validatedParams.sortOrder },
         skip: (validatedParams.page - 1) * validatedParams.pageSize,
         take: validatedParams.pageSize,
         include: {
