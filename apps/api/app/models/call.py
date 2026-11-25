@@ -4,7 +4,6 @@
 from app.models.base import BaseModel
 from app.models.enums import CallDirection, CallStatus, InterestLevel, SyncStatus
 from sqlalchemy import (
-    JSON,
     Boolean,
     Column,
     DateTime,
@@ -15,7 +14,7 @@ from sqlalchemy import (
     Text,
 )
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import relationship
 
 
@@ -58,7 +57,7 @@ class Call(BaseModel):
     recording_sid = Column(String(50), nullable=True)
     transcript_url = Column(String(500), nullable=True)
     transcript_text = Column(Text, nullable=True)
-    transcript_segments = Column(JSON, default=[], nullable=False)
+    transcript_segments = Column(JSONB, default=list, nullable=False)
 
     # Google Sheets Sync
     sheets_synced = Column(Boolean, default=False, nullable=False)
