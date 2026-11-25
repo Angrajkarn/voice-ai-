@@ -3,7 +3,7 @@
 
 from app.models.base import BaseModel
 from app.models.enums import CustomerStatus
-from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, UniqueConstraint
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, UniqueConstraint, func
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -14,7 +14,7 @@ class CampaignCustomer(BaseModel):
 
     priority = Column(Integer, default=0, nullable=False)
     status = Column(SQLEnum(CustomerStatus), default=CustomerStatus.NEW, nullable=False, index=True)
-    assigned_at = Column(DateTime(timezone=True), nullable=False)
+    assigned_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     called_at = Column(DateTime(timezone=True), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
 
