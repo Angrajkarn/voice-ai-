@@ -243,18 +243,18 @@ export const settingsApi = {
 // Suppression List
 export const suppressionApi = {
   list: (organizationId: string, params?: { page?: number; pageSize?: number; activeOnly?: boolean }) =>
-    api.get('/suppressions', { params: { organizationId, ...params } }),
+    api.get('/suppressions', { organizationId, ...params }),
   add: (data: { phone: string; reason: string; campaignId?: string; expiresAt?: string }) =>
     api.post('/suppressions', data),
   remove: (id: string) => api.delete(`/suppressions/${id}`),
-  check: (phone: string) => api.get('/suppressions/check', { params: { phone } }),
+  check: (phone: string) => api.get('/suppressions/check', { phone }),
   import: (file: File) => api.upload('/suppressions/import', file),
 };
 
 // Consent Records
 export const consentApi = {
   list: (organizationId: string, params?: { page?: number; pageSize?: number; status?: string }) =>
-    api.get('/consent', { params: { organizationId, ...params } }),
+    api.get('/consent', { organizationId, ...params }),
   record: (data: { phone: string; status: string; method: string; proofUrl?: string; campaignId?: string }) =>
     api.post('/consent', data),
   revoke: (id: string) => api.post(`/consent/${id}/revoke`),
