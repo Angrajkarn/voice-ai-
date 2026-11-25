@@ -16,6 +16,16 @@ class ApiClient {
         'Content-Type': 'application/json',
       },
       withCredentials: true,
+      paramsSerializer: (params) => {
+        const query = new URLSearchParams();
+        const toSnakeCase = (key: string) => key.replace(/[A-Z]/g, (letter) => '_' + letter.toLowerCase());
+        Object.entries(params || {}).forEach(([key, value]) => {
+          if (value === undefined || value === null || value === '') return;
+          if (Array.isArray(value)) value.forEach((item) => query.append(toSnakeCase(key), String(item)));
+          else query.set(toSnakeCase(key), String(value));
+        });
+        return query.toString();
+      },
     });
 
     // Request interceptor for auth
