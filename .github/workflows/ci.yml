@@ -345,7 +345,8 @@ jobs:
           PORT="${VPS_SSH_PORT:-22}"
           ssh -i ~/.ssh/id_ed25519 -p "$PORT" \
             -o BatchMode=yes -o StrictHostKeyChecking=yes \
-            "$VPS_USERNAME@$VPS_HOST" "mkdir -p '$VPS_APP_PATH'"
+            "$VPS_USERNAME@$VPS_HOST" \
+            "command -v rsync >/dev/null 2>&1 || { echo 'rsync is required on the VPS'; exit 1; }; mkdir -p '$VPS_APP_PATH'"
 
       - name: Sync application source to VPS
         shell: bash
