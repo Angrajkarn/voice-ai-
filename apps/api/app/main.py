@@ -15,7 +15,7 @@ from app.api.v1 import (
     suppressions,
     webhooks,
 )
-from app.api.v1 import settings as settings_api
+from app.api.v1 import settings as settings_api\nfrom app.api.v1 import auth as auth_api
 from app.core.config import settings
 from app.core.exceptions import AppException
 from app.db.session import close_db, init_db
@@ -108,7 +108,7 @@ async def health_check():
 
 
 # Include routers
-app.include_router(campaigns.router, prefix="/api/v1")
+app.include_router(auth_api.router, prefix="/api/v1")\napp.include_router(campaigns.router, prefix="/api/v1")
 app.include_router(customers.router, prefix="/api/v1")
 app.include_router(calls.router, prefix="/api/v1")
 app.include_router(callbacks.router, prefix="/api/v1")
