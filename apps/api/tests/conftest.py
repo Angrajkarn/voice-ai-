@@ -1,6 +1,5 @@
 # Pytest configuration and fixtures
 
-import asyncio
 import os
 import sys
 from collections.abc import AsyncGenerator
@@ -31,14 +30,6 @@ from httpx import ASGITransport, AsyncClient
 
 # Test database URL
 TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/voiceai_test"
-
-
-@pytest_asyncio.fixture(scope="session")
-def event_loop():
-    """Create event loop for async tests"""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
 
 
 @pytest_asyncio.fixture(scope="session")
@@ -99,9 +90,8 @@ async def test_user(db_session, test_organization) -> User:
     """Create a test user"""
     user = User(
         email="test@example.com",
-        hashed_password="hashed_password",
-        first_name="Test",
-        last_name="User",
+        name="Test User",
+        password_hash="hashed_password",
         role=UserRole.ADMIN,
         organization_id=test_organization.id,
         is_active=True,
