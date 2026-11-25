@@ -81,16 +81,16 @@ jobs:
       - name: Generate Prisma client
         run: |
           mkdir -p apps/web/prisma
-          cat > apps/web/prisma/schema.prisma << 'EOF'
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+          cat > apps/web/prisma/schema.prisma << 'HEREDOC'
+          datasource db {
+            provider = "postgresql"
+            url      = env("DATABASE_URL")
+          }
 
-generator client {
-  provider = "prisma-client-js"
-}
-EOF
+          generator client {
+            provider = "prisma-client-js"
+          }
+          HEREDOC
           cd apps/web && npx prisma generate
 
       - name: Run tests
