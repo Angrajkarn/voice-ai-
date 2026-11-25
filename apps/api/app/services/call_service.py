@@ -156,14 +156,18 @@ class CallService:
 
             # Decrypt config (in production, use proper encryption)
             import json
-            config = json.loads(integration.config) if isinstance(integration.config, str) else integration.config
+            config = integration.config
 
             # Initiate call via Twilio
+            from_number = config.get("phone_number")
+            if not isinstance(from_number, str) or not from_number:
+                raise ValueError("Twilio integration is missing its phone number")
+
             call_sid = await self.twilio.make_call(
                 to_number=call.to_number,
-                from_number=config.get("phone_number"),
-                campaign_id=call.campaign_id,
-                call_id=call.id,
+                from_number=from_number,
+                campaign_id=str(call.campaign_id),
+                call_id=str(call.id),
             )
 
             if call_sid:

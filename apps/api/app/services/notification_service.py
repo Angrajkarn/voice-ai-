@@ -92,6 +92,7 @@ class NotificationService:
                 },
                 campaign_id=callback.campaign_id,
             )
+        return None
 
     async def create_human_followup_notification(self, call) -> Notification | None:
         """Create notification for human follow-up required"""

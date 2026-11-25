@@ -199,14 +199,14 @@ class CustomerService:
                     select(CampaignCustomer).where(
                         and_(
                             CampaignCustomer.campaign_id == campaign_id,
-                            CampaignCustomer.customer_id == customer.id,
+                            CampaignCustomer.customer_id == created_customer.id,
                         )
                     )
                 )
                 if not existing_link:
                     link = CampaignCustomer(
                         campaign_id=campaign_id,
-                        customer_id=customer.id,
+                        customer_id=created_customer.id,
                         status=CustomerStatus.NEW,
                     )
                     self.db.add(link)
@@ -245,7 +245,7 @@ class CustomerService:
                 None
             )
             if matched_key and row[matched_key]:
-                value = row[matched_key].strip()
+                value: str | list[str] = row[matched_key].strip()
                 if field == "phone":
                     value = self._normalize_phone(value)
                 elif field == "tags":
