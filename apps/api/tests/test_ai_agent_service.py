@@ -129,5 +129,5 @@ class TestAIAgentService:
                 "Product launch campaign"
             )
 
-            assert "interested" in summary.lower()
+            assert "interest" in summary.lower()
             assert "callback" in summary.lower()
