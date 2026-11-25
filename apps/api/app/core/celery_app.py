@@ -36,6 +36,10 @@ celery_app.conf.update(
             "task": "app.tasks.callback_tasks.send_callback_reminders",
             "schedule": 300.0,  # Every 5 minutes
         },
+        "process-outbound-call-queue": {
+            "task": "app.tasks.call_tasks.process_call_queue",
+            "schedule": 15.0,
+        },
         "retry-failed-calls": {
             "task": "app.tasks.call_tasks.retry_failed_calls",
             "schedule": 3600.0,  # Every hour
