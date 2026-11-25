@@ -3,7 +3,6 @@
 from app.models.base import BaseModel
 from app.models.enums import CustomerStatus, InterestLevel
 from sqlalchemy import (
-    JSON,
     Boolean,
     Column,
     DateTime,
@@ -13,7 +12,7 @@ from sqlalchemy import (
     String,
 )
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import relationship
 
 
@@ -31,7 +30,7 @@ class Customer(BaseModel):
     language = Column(String(10), default="en-IN", nullable=False)
     timezone = Column(String(50), default="Asia/Kolkata", nullable=False)
     tags = Column(ARRAY(String), default=[], nullable=False)
-    custom_fields = Column(JSON, default={}, nullable=False)
+    custom_fields = Column(JSONB, default=dict, nullable=False)
 
     status = Column(SQLEnum(CustomerStatus), default=CustomerStatus.NEW, nullable=False, index=True)
     interest_level = Column(SQLEnum(InterestLevel), default=InterestLevel.UNKNOWN, nullable=False, index=True)
@@ -39,7 +38,7 @@ class Customer(BaseModel):
     max_call_attempts = Column(Integer, default=3, nullable=False)
     last_call_at = Column(DateTime(timezone=True), nullable=True)
     next_callback_at = Column(DateTime(timezone=True), nullable=True, index=True)
-    last_call_status = Column(SQLEnum('call_status_enum', name='call_status_enum', create_type=False), nullable=True)
+    last_call_status = Column(String(50), nullable=True)
     last_call_duration = Column(Integer, nullable=True)
     final_disposition = Column(String(200), nullable=True)
     do_not_call = Column(Boolean, default=False, nullable=False)
