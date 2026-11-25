@@ -8,25 +8,19 @@ import { Toaster } from '@/components/ui/toaster';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = React.useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 60 * 1000, // 1 minute
-            refetchOnWindowFocus: false,
-          },
+    () => new QueryClient({
+      defaultOptions: {
+        queries: {
+          staleTime: 60 * 1000,
+          refetchOnWindowFocus: false,
         },
-      })
+      },
+    }),
   );
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="system"
-        enableSystem
-        disableTransitionOnChange
-      >
+      <ThemeProvider attribute="data-theme" defaultTheme="voiceai" themes={['voiceai', 'voiceai-light']} enableSystem={false} disableTransitionOnChange>
         {children}
         <Toaster />
         <ReactQueryDevtools initialIsOpen={false} />

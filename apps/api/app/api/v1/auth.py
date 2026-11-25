@@ -1,7 +1,6 @@
 """Firebase-backed account bootstrap and application JWT exchange."""
 import re
 from datetime import datetime, timezone
-from uuid import uuid4
 
 import firebase_admin
 from firebase_admin import auth as firebase_auth, credentials
@@ -11,7 +10,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.dependencies import create_access_token, create_refresh_token
+from app.core.dependencies import (
+    create_access_token,
+    create_refresh_token,
+    get_current_organization,
+    get_current_user,
+)
 from app.db.session import get_db
 from app.models.enums import OrganizationPlan, UserRole
 from app.models.organization import Organization
@@ -80,5 +84,29 @@ async def firebase_session(payload: FirebaseSessionRequest, db: AsyncSession = D
         "access_token": create_access_token(claims),
         "refresh_token": create_refresh_token(claims),
         "token_type": "bearer",
-        "user": {"id": str(user.id), "email": user.email, "name": user.name, "organization_id": str(user.organization_id), "role": user.role.value},
+        "user": {
+            "id": str(user.id),
+            "email": user.email,
+            "name": user.name,
+            "avatar_url": user.avatar_url,
+            "organization_id": str(user.organization_id),
+            "role": user.role.value,
+        },
+    }
+
+
+@router.get("/me")
+async def get_my_profile(
+    current_user: User = Depends(get_current_user),
+    organization: Organization = Depends(get_current_organization),
+):
+    """Return the signed-in user's real profile and workspace."""
+    return {
+        "id": str(current_user.id),
+        "email": current_user.email,
+        "name": current_user.name,
+        "avatar_url": current_user.avatar_url,
+        "role": current_user.role.value,
+        "organization_id": str(organization.id),
+        "organization_name": organization.name,
     }

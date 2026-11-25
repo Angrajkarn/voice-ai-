@@ -6,10 +6,10 @@ import { Providers } from './(dashboard)/providers';
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
-  title: 'VoiceAI - AI Voice Calling Automation Platform',
-  description: 'Manage AI-assisted customer calling campaigns, conversations and follow-ups.',
+  title: 'VoiceAI — Intelligent Voice Operations',
+  description: 'Build, launch and improve AI-powered customer conversations with voice agents, campaigns and post-call intelligence.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return <html lang="en" suppressHydrationWarning><body className={`${inter.variable} font-sans antialiased`}><Providers>{children}</Providers></body></html>;
+  return <html lang="en" data-theme="voiceai" suppressHydrationWarning><body className={`${inter.variable} font-sans antialiased`}><Providers>{children}</Providers></body></html>;
 }

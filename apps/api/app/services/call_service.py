@@ -5,6 +5,7 @@ from datetime import datetime
 from uuid import UUID
 
 from app.models.call import Call
+from app.models.campaign import Campaign
 from app.models.call_recording import CallRecording
 from app.models.call_transcript import CallTranscript
 from app.models.enums import (
@@ -60,8 +61,12 @@ class CallService:
         interest_level: str | None = None,
         date_from: datetime | None = None,
         date_to: datetime | None = None,
+        organization_id: UUID | None = None,
     ) -> tuple[list[Call], int]:
-        query = select(Call)
+        query = select(Call).join(Campaign, Call.campaign_id == Campaign.id)
+
+        if organization_id:
+            query = query.where(Campaign.organization_id == organization_id)
 
         if campaign_id:
             query = query.where(Call.campaign_id == campaign_id)

@@ -12,6 +12,10 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     const value = request.headers.get(name);
     if (value) headers.set(name, value);
   }
+  if (!headers.has('authorization')) {
+    const sessionCookie = request.cookies.get('voiceai_session')?.value;
+    if (sessionCookie) headers.set('authorization', `Bearer ${sessionCookie}`);
+  }
 
   try {
     const upstream = await fetch(upstreamUrl, {
@@ -23,22 +27,19 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     });
     const contentType = upstream.headers.get('content-type') || '';
     const body = await upstream.arrayBuffer();
-
-    // API clients expect JSON. Convert upstream HTML error pages into a useful JSON response.
     if (contentType.includes('text/html')) {
       return Response.json(
         { error: 'The API returned an HTML page instead of JSON.', code: 'UPSTREAM_NOT_JSON', upstreamStatus: upstream.status },
         { status: 502 },
       );
     }
-
     const responseHeaders = new Headers();
     for (const name of ['content-type', 'content-disposition', 'cache-control']) {
       const value = upstream.headers.get(name);
       if (value) responseHeaders.set(name, value);
     }
     return new Response(body, { status: upstream.status, headers: responseHeaders });
-  } catch (error) {
+  } catch {
     return Response.json(
       { error: 'Unable to reach the VoiceAI API. Check PYTHON_API_URL and the backend service.', code: 'API_PROXY_ERROR' },
       { status: 502 },
