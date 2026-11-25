@@ -39,6 +39,10 @@ class IntegrationService:
             config["auth_token"] = encrypt_secret(str(config["auth_token"]))
             payload["config"] = config
         integration = Integration(**payload, organization_id=organization_id)
+        if integration.type == IntegrationType.TWILIO:
+            verification = await self._test_twilio(integration)
+            if not verification.get("success"):
+                raise ValueError(verification.get("error", "Twilio credentials could not be verified."))
         self.db.add(integration)
         await self.db.commit()
         await self.db.refresh(integration)
