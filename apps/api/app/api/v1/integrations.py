@@ -42,7 +42,7 @@ async def create_integration(
     try:
         integration = await service.create(data, organization.id)
         return integration
-    except ValueError as exc:
+    except (ValueError, RuntimeError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
