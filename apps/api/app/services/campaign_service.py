@@ -145,6 +145,8 @@ class CampaignService:
             raise ValueError("AI instructions must be at least 50 characters before starting.")
         if len((campaign.opening_script or "").strip()) < 20:
             raise ValueError("Opening script must be at least 20 characters before starting.")
+        if not settings.OPENAI_API_KEY:
+            raise ValueError("Set OPENAI_API_KEY on the backend to enable the campaign's AI voice responses.")
         integration = await self.db.scalar(select(Integration).where(and_(
             Integration.organization_id == organization_id, Integration.type == IntegrationType.TWILIO,
             Integration.is_active.is_(True), or_(Integration.campaign_id == campaign.id, Integration.campaign_id.is_(None)),
