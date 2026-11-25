@@ -1,6 +1,13 @@
 # Webhook API routes for Twilio and other providers
 
 from uuid import UUID
+import json
+
+from sqlalchemy import and_, or_, select
+from app.core.crypto import decrypt_secret
+from app.models.campaign import Campaign
+from app.models.enums import IntegrationType
+from app.models.integration import Integration
 
 from app.db.session import get_db
 from app.services.ai_agent_service import AIAgentService
@@ -10,6 +17,28 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
+
+
+async def _twilio_for_campaign(db: AsyncSession, campaign_id: UUID) -> TwilioService:
+    campaign = await db.get(Campaign, campaign_id)
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    integration = await db.scalar(select(Integration).where(and_(
+        Integration.organization_id == campaign.organization_id,
+        Integration.type == IntegrationType.TWILIO,
+        Integration.is_active.is_(True),
+        or_(Integration.campaign_id == campaign.id, Integration.campaign_id.is_(None)),
+    )).order_by((Integration.campaign_id == campaign.id).desc()).limit(1))
+    if not integration:
+        return TwilioService()
+    config = integration.config
+    if isinstance(config, str):
+        config = json.loads(config)
+    return TwilioService(
+        account_sid=config.get("account_sid"),
+        auth_token=decrypt_secret(config.get("auth_token", "")),
+        phone_number=config.get("phone_number"),
+    )
 
 
 @router.post("/twilio/voice")
@@ -24,7 +53,7 @@ async def twilio_voice_webhook(
     data = {key: value for key, value in form_data.items() if isinstance(value, str)}
 
     # Validate webhook signature
-    twilio = TwilioService()
+    twilio = await _twilio_for_campaign(db, campaign_id)
     signature = request.headers.get("X-Twilio-Signature", "")
     url = str(request.url)
 
@@ -50,23 +79,23 @@ async def twilio_voice_webhook(
     # For now, use a simple TwiML flow
     # In production, this would connect to OpenAI Realtime API via Media Streams
 
+    language = "en-IN" if campaign.language == "hinglish" else campaign.language
+    voice = campaign.voice_id or "Google.en-IN-Wavenet-D"
     gather = Gather(
         input="speech",
         action=f"/webhooks/twilio/gather?campaign_id={campaign_id}&call_id={call_id}",
         method="POST",
-        language="en-IN",
+        language=language,
         speech_timeout="auto",
         enhanced=True,
     )
-
-    # Generate opening script
     opening = await ai_service.generate_opening_script(campaign, call.customer)
-    gather.say(opening, voice="alice", language="en-IN")
+    gather.say(opening, voice=voice, language=language)
 
     response.append(gather)
 
     # Fallback if no speech detected
-    response.say("I didn't hear anything. Let me try again.", voice="alice", language="en-IN")
+    response.say("I didn't hear anything. Let me try again.", voice=voice, language=language)
     response.redirect(f"/webhooks/twilio/voice?campaign_id={campaign_id}&call_id={call_id}")
 
     return Response(content=str(response), media_type="application/xml")
@@ -99,23 +128,25 @@ async def twilio_gather_webhook(
 
     response = VoiceResponse()
 
-    # Simple response logic
+    # Simple response logic, spoken with the selected campaign voice.
+    language = "en-IN" if call.campaign.language == "hinglish" else call.campaign.language
+    voice = call.campaign.voice_id or "Google.en-IN-Wavenet-D"
     if "interested" in speech_result.lower() or "yes" in speech_result.lower():
-        response.say("Great! Let me tell you more about our offering.", voice="alice")
+        response.say("Great! Let me tell you more about our offering.", voice=voice, language=language)
     elif "not interested" in speech_result.lower() or "no" in speech_result.lower():
-        response.say("I understand. Thank you for your time. Have a great day!", voice="alice")
+        response.say("I understand. Thank you for your time. Have a great day!", voice=voice, language=language)
         response.hangup()
     elif "callback" in speech_result.lower() or "call back" in speech_result.lower():
-        response.say("Sure, I can schedule a callback for you. What time works best?", voice="alice")
+        response.say("Sure, I can schedule a callback for you. What time works best?", voice=voice, language=language)
     else:
-        response.say("I see. Could you tell me more about what you're looking for?", voice="alice")
+        response.say("I see. Could you tell me more about what you're looking for?", voice=voice, language=language)
 
     # Continue gathering
     gather = Gather(
         input="speech",
         action=f"/webhooks/twilio/gather?campaign_id={campaign_id}&call_id={call_id}",
         method="POST",
-        language="en-IN",
+        language=language,
     )
     response.append(gather)
 
@@ -134,7 +165,7 @@ async def twilio_status_webhook(
     data = {key: value for key, value in form_data.items() if isinstance(value, str)}
 
     # Validate signature
-    twilio = TwilioService()
+    twilio = await _twilio_for_campaign(db, campaign_id)
     signature = request.headers.get("X-Twilio-Signature", "")
     url = str(request.url)
 
@@ -165,7 +196,7 @@ async def twilio_recording_webhook(
     data = {key: value for key, value in form_data.items() if isinstance(value, str)}
 
     # Validate signature
-    twilio = TwilioService()
+    twilio = await _twilio_for_campaign(db, campaign_id)
     signature = request.headers.get("X-Twilio-Signature", "")
     url = str(request.url)
 
@@ -197,7 +228,7 @@ async def twilio_transcription_webhook(
     data = {key: value for key, value in form_data.items() if isinstance(value, str)}
 
     # Validate signature
-    twilio = TwilioService()
+    twilio = await _twilio_for_campaign(db, campaign_id)
     signature = request.headers.get("X-Twilio-Signature", "")
     url = str(request.url)
 
