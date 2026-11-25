@@ -2,19 +2,59 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthP
 import { firebaseAuth } from './firebase';
 import { api } from './api';
 
+export type VoiceAIUser = {
+  id: string;
+  email: string;
+  name: string | null;
+  organization_id: string;
+  role: string;
+  avatar_url?: string | null;
+  organization_name?: string | null;
+};
+
 export type VoiceAISession = {
   access_token: string;
   refresh_token: string;
   token_type: 'bearer';
-  user: { id: string; email: string; name: string | null; organization_id: string; role: string };
+  user: VoiceAIUser;
 };
+
+const SESSION_KEY = 'voiceai_access_token';
+const USER_KEY = 'voiceai_user';
+
+async function persistSession(session: VoiceAISession) {
+  if (typeof window === 'undefined') return;
+  sessionStorage.setItem(SESSION_KEY, session.access_token);
+  sessionStorage.setItem(USER_KEY, JSON.stringify(session.user));
+  const response = await fetch('/api/auth/session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: session.access_token }),
+    credentials: 'same-origin',
+  });
+  if (!response.ok) {
+    sessionStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(USER_KEY);
+    throw new Error('Your account was verified, but the secure browser session could not be created. Please try again.');
+  }
+}
 
 async function exchangeFirebaseSession(workspaceName?: string): Promise<VoiceAISession> {
   if (!firebaseAuth?.currentUser) throw new Error('Firebase is not configured or the user is not signed in.');
   const idToken = await firebaseAuth.currentUser.getIdToken(true);
   const session = await api.post<VoiceAISession>('/auth/firebase/session', { id_token: idToken, workspace_name: workspaceName });
-  if (typeof window !== 'undefined') sessionStorage.setItem('voiceai_access_token', session.access_token);
+  await persistSession(session);
   return session;
+}
+
+export function getStoredVoiceAIUser(): VoiceAIUser | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const value = sessionStorage.getItem(USER_KEY);
+    return value ? JSON.parse(value) as VoiceAIUser : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function registerWithEmail(name: string, email: string, password: string, workspace: string) {
@@ -32,13 +72,17 @@ export async function loginWithEmail(email: string, password: string) {
   return exchangeFirebaseSession();
 }
 
-export async function loginWithGoogle() {
+export async function loginWithGoogle(workspaceName?: string) {
   if (!firebaseAuth) throw new Error('Firebase configuration is missing. Add the NEXT_PUBLIC_FIREBASE_* environment variables.');
   await signInWithPopup(firebaseAuth, new GoogleAuthProvider());
-  return exchangeFirebaseSession();
+  return exchangeFirebaseSession(workspaceName);
 }
 
 export async function logoutVoiceAI() {
-  if (typeof window !== 'undefined') sessionStorage.removeItem('voiceai_access_token');
+  if (typeof window !== 'undefined') {
+    sessionStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(USER_KEY);
+    await fetch('/api/auth/session', { method: 'DELETE', credentials: 'same-origin' }).catch(() => undefined);
+  }
   if (firebaseAuth) await signOut(firebaseAuth);
 }

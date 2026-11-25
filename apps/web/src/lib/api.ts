@@ -44,6 +44,13 @@ class ApiClient {
       (response) => response,
       async (error: AxiosError) => {
         if (error.response?.status === 401) {
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('voiceai_access_token');
+            sessionStorage.removeItem('voiceai_user');
+            void fetch('/api/auth/session', { method: 'DELETE', credentials: 'same-origin' }).finally(() => {
+              if (!window.location.pathname.startsWith('/login')) window.location.assign('/login');
+            });
+          }
           return Promise.reject(new Error('Your session has expired. Please sign in again.'));
         }
         return Promise.reject(this.formatError(error));

@@ -43,6 +43,7 @@ async def list_calls(
         interest_level=interest_level,
         date_from=date_from,
         date_to=date_to,
+        organization_id=organization.id,
     )
     return {
         "data": calls,

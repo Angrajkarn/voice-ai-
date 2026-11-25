@@ -1,7 +1,7 @@
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
-  darkMode: 'class',
+  darkMode: ['class', '[data-theme="voiceai"]'],
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -15,35 +15,13 @@ const config: Config = {
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
-        primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
-        },
-        secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))',
-        },
-        destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))',
-        },
-        muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))',
-        },
-        accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))',
-        },
-        popover: {
-          DEFAULT: 'hsl(var(--popover))',
-          foreground: 'hsl(var(--popover-foreground))',
-        },
-        card: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))',
-        },
-        // Status colors
+        primary: { DEFAULT: 'hsl(var(--primary))', foreground: 'hsl(var(--primary-foreground))' },
+        secondary: { DEFAULT: 'hsl(var(--secondary))', foreground: 'hsl(var(--secondary-foreground))' },
+        destructive: { DEFAULT: 'hsl(var(--destructive))', foreground: 'hsl(var(--destructive-foreground))' },
+        muted: { DEFAULT: 'hsl(var(--muted))', foreground: 'hsl(var(--muted-foreground))' },
+        accent: { DEFAULT: 'hsl(var(--accent))', foreground: 'hsl(var(--accent-foreground))' },
+        popover: { DEFAULT: 'hsl(var(--popover))', foreground: 'hsl(var(--popover-foreground))' },
+        card: { DEFAULT: 'hsl(var(--card))', foreground: 'hsl(var(--card-foreground))' },
         status: {
           draft: 'hsl(var(--status-draft))',
           ready: 'hsl(var(--status-ready))',
@@ -58,31 +36,13 @@ const config: Config = {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
-      fontFamily: {
-        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
-        mono: ['var(--font-mono)', 'monospace'],
-      },
+      fontFamily: { sans: ['var(--font-sans)', 'system-ui', 'sans-serif'], mono: ['var(--font-mono)', 'monospace'] },
       keyframes: {
-        'accordion-down': {
-          from: { height: '0' },
-          to: { height: 'var(--radix-accordion-content-height)' },
-        },
-        'accordion-up': {
-          from: { height: 'var(--radix-accordion-content-height)' },
-          to: { height: '0' },
-        },
-        'pulse-soft': {
-          '0%, 100%': { opacity: '1' },
-          '50%': { opacity: '0.7' },
-        },
-        'slide-in': {
-          from: { transform: 'translateX(-100%)' },
-          to: { transform: 'translateX(0)' },
-        },
-        'fade-in': {
-          from: { opacity: '0' },
-          to: { opacity: '1' },
-        },
+        'accordion-down': { from: { height: '0' }, to: { height: 'var(--radix-accordion-content-height)' } },
+        'accordion-up': { from: { height: 'var(--radix-accordion-content-height)' }, to: { height: '0' } },
+        'pulse-soft': { '0%, 100%': { opacity: '1' }, '50%': { opacity: '0.7' } },
+        'slide-in': { from: { transform: 'translateX(-100%)' }, to: { transform: 'translateX(0)' } },
+        'fade-in': { from: { opacity: '0' }, to: { opacity: '1' } },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -94,6 +54,60 @@ const config: Config = {
     },
   },
   plugins: [require('tailwindcss-animate'), require('daisyui')],
+  daisyui: {
+    themes: [
+      {
+        voiceai: {
+          'color-scheme': 'dark',
+          primary: '#67e8f9',
+          'primary-content': '#07111f',
+          secondary: '#818cf8',
+          'secondary-content': '#090d1b',
+          accent: '#c4b5fd',
+          'accent-content': '#17112c',
+          neutral: '#1e293b',
+          'neutral-content': '#e2e8f0',
+          'base-100': '#0b1220',
+          'base-200': '#111b2d',
+          'base-300': '#263449',
+          'base-content': '#e7eef8',
+          info: '#38bdf8',
+          success: '#34d399',
+          warning: '#fbbf24',
+          error: '#fb7185',
+          '--rounded-box': '1rem',
+          '--rounded-btn': '0.75rem',
+          '--rounded-badge': '1rem',
+          '--animation-btn': '0.2s',
+          '--animation-input': '0.2s',
+        },
+        'voiceai-light': {
+          'color-scheme': 'light',
+          primary: '#0e7490',
+          'primary-content': '#ffffff',
+          secondary: '#4f46e5',
+          'secondary-content': '#ffffff',
+          accent: '#7c3aed',
+          'accent-content': '#ffffff',
+          neutral: '#334155',
+          'neutral-content': '#f8fafc',
+          'base-100': '#ffffff',
+          'base-200': '#f1f5f9',
+          'base-300': '#dbe4ee',
+          'base-content': '#0f172a',
+          info: '#0284c7',
+          success: '#059669',
+          warning: '#d97706',
+          error: '#e11d48',
+          '--rounded-box': '1rem',
+          '--rounded-btn': '0.75rem',
+          '--rounded-badge': '1rem',
+        },
+      },
+    ],
+    darkTheme: 'voiceai',
+    logs: false,
+  },
 };
 
 export default config;

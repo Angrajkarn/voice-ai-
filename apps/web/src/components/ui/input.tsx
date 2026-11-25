@@ -18,37 +18,21 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
     return (
       <div className="w-full">
-        {label && (
-          <label htmlFor={inputId} className="block text-sm font-medium text-foreground mb-1.5">
-            {label}
-          </label>
-        )}
+        {label && <label htmlFor={inputId} className="mb-1.5 block text-sm font-medium text-base-content">{label}</label>}
         <input
           type={type}
           id={inputId}
-          className={cn(
-            'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-            error && 'border-destructive focus-visible:ring-destructive',
-            className
-          )}
+          className={cn('input input-bordered h-11 w-full rounded-xl border-base-300 bg-base-100 text-base-content placeholder:text-base-content/40 focus:input-primary', error && 'input-error', className)}
           ref={ref}
           aria-invalid={error ? 'true' : 'false'}
           aria-describedby={error ? errorId : helperText ? helperId : undefined}
           {...props}
         />
-        {error && (
-          <p id={errorId} className="mt-1.5 text-sm text-destructive" role="alert">
-            {error}
-          </p>
-        )}
-        {helperText && !error && (
-          <p id={helperId} className="mt-1.5 text-sm text-muted-foreground">
-            {helperText}
-          </p>
-        )}
+        {error && <p id={errorId} className="mt-1.5 text-sm text-error" role="alert">{error}</p>}
+        {helperText && !error && <p id={helperId} className="mt-1.5 text-sm text-base-content/60">{helperText}</p>}
       </div>
     );
-  }
+  },
 );
 Input.displayName = 'Input';
 
