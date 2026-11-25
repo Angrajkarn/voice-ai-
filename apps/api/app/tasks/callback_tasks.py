@@ -2,6 +2,7 @@
 
 from celery import shared_task
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy import and_, select
 from sqlalchemy.orm import sessionmaker
 from typing import List
 from uuid import UUID
@@ -96,7 +97,7 @@ def check_callback_outcomes():
         async with AsyncSessionLocal() as db:
             from app.models.callback import Callback
             from app.models.enums import CallbackStatus, CallStatus
-            from sqlalchemy import select
+            from app.models.call import Call
 
             # Get callbacks with result calls that completed
             callbacks = await db.execute(
