@@ -57,7 +57,7 @@ class CampaignBase(BaseModel):
 
 
 class CampaignCreate(CampaignBase):
-    pass
+    customer_ids: list[UUID] = Field(..., min_length=1, max_length=1000)
 
 
 class CampaignUpdate(BaseModel):
