@@ -38,8 +38,9 @@ export default function CampaignsPage() {
   React.useEffect(()=>{let active=true;customersApi.list({page:1,pageSize:100}).then(r=>{if(active)setCustomerOptions(Array.isArray(r.data)?r.data:[]);}).catch(()=>{if(active)setCustomerOptions([]);});return()=>{active=false;};},[]);
 
   async function createCampaign(event: React.FormEvent) {
-    event.preventDefault(); setBusy('create'); setError(''); setNotice('');
+    event.preventDefault(); setError(''); setNotice('');
     if(selectedCustomers.length===0){setError('Select at least one customer for this campaign.');return;}
+    setBusy('create');
     try { await campaignsApi.create({...form,customer_ids:selectedCustomers}); setModal(false); setSelectedCustomers([]); setForm({name:'',description:'',purpose:'',ai_instructions:'',opening_script:'',language:'en-IN',voice_id:'Google.en-IN-Wavenet-D',calling_window_start:'09:00',calling_window_end:'18:00',calling_timezone:'Asia/Kolkata',max_calls_per_day:100,delay_between_calls:30}); setNotice('Campaign created and customers assigned.'); await load(); }
     catch(e) { setError(e instanceof Error ? e.message : 'Campaign could not be created.'); }
     finally { setBusy(''); }
