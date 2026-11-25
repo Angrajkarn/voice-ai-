@@ -13,7 +13,7 @@ from app.db.session import get_db
 from app.services.ai_agent_service import AIAgentService
 from app.services.call_service import CallService
 from app.services.twilio_service import TwilioService
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -44,8 +44,8 @@ async def _twilio_for_campaign(db: AsyncSession, campaign_id: UUID) -> TwilioSer
 @router.post("/twilio/voice")
 async def twilio_voice_webhook(
     request: Request,
-    campaign_id: UUID = Form(...),
-    call_id: UUID = Form(...),
+    campaign_id: UUID = Query(...),
+    call_id: UUID = Query(...),
     db: AsyncSession = Depends(get_db),
 ):
     """Handle incoming Twilio voice webhook - returns TwiML"""
@@ -104,8 +104,8 @@ async def twilio_voice_webhook(
 @router.post("/twilio/gather")
 async def twilio_gather_webhook(
     request: Request,
-    campaign_id: UUID = Form(...),
-    call_id: UUID = Form(...),
+    campaign_id: UUID = Query(...),
+    call_id: UUID = Query(...),
     db: AsyncSession = Depends(get_db),
 ):
     """Handle speech input from customer"""
@@ -156,8 +156,8 @@ async def twilio_gather_webhook(
 @router.post("/twilio/status")
 async def twilio_status_webhook(
     request: Request,
-    campaign_id: UUID = Form(...),
-    call_id: UUID = Form(...),
+    campaign_id: UUID = Query(...),
+    call_id: UUID = Query(...),
     db: AsyncSession = Depends(get_db),
 ):
     """Handle Twilio call status callbacks"""
@@ -187,8 +187,8 @@ async def twilio_status_webhook(
 @router.post("/twilio/recording")
 async def twilio_recording_webhook(
     request: Request,
-    campaign_id: UUID = Form(...),
-    call_id: UUID = Form(...),
+    campaign_id: UUID = Query(...),
+    call_id: UUID = Query(...),
     db: AsyncSession = Depends(get_db),
 ):
     """Handle Twilio recording callbacks"""
@@ -219,8 +219,8 @@ async def twilio_recording_webhook(
 @router.post("/twilio/transcription")
 async def twilio_transcription_webhook(
     request: Request,
-    campaign_id: UUID = Form(...),
-    call_id: UUID = Form(...),
+    campaign_id: UUID = Query(...),
+    call_id: UUID = Query(...),
     db: AsyncSession = Depends(get_db),
 ):
     """Handle Twilio transcription callbacks"""
