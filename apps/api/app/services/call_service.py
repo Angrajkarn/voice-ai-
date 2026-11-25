@@ -128,6 +128,7 @@ class CallService:
             )
             .order_by(Call.queued_at.asc())
             .limit(1)
+            .with_for_update(skip_locked=True)
         )
         return result.scalar_one_or_none()
 
