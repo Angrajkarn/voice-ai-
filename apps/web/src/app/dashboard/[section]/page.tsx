@@ -99,7 +99,7 @@ export default function SectionPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex items-start gap-3">
             <div className="rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/10 to-secondary/10 p-3.5 shadow-sm"><Icon className="h-6 w-6 text-primary" /></div>
-            <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Workspace</p><h1 className="mt-1 text-3xl font-semibold tracking-tight">{config.title}</h1><p className="mt-1 text-sm text-muted-foreground">{config.description}</p></div>
+            <div><h1 className="text-3xl font-semibold tracking-tight">{config.title}</h1></div>
           </div>
           <div className="flex items-center gap-3">
             {lastUpdated && <span className="text-xs text-muted-foreground">Updated {lastUpdated.toLocaleTimeString()}</span>}

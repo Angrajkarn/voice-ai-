@@ -72,7 +72,7 @@ export default function SettingsPage() {
 
   return <DashboardLayout><div className="mx-auto max-w-[1280px] space-y-7">
     <header className="flex flex-wrap items-end justify-between gap-4">
-      <div><p className="text-[10px] font-bold uppercase tracking-[.22em] text-primary">Account control center</p><h1 className="mt-2 text-3xl font-bold tracking-tight">Profile & settings</h1><p className="mt-2 max-w-2xl text-sm text-base-content/55">Manage your identity, workspace details and real account notifications.</p></div>
+      <div><h1 className="text-3xl font-bold tracking-tight">Settings</h1></div>
       <Button variant="outline" onClick={() => { setLoading(true); void load(); }} disabled={loading}><RefreshCw className={'mr-2 h-4 w-4 ' + (loading ? 'animate-spin' : '')}/>Refresh data</Button>
     </header>
     {error && <div role="alert" className="rounded-xl border border-error/25 bg-error/5 px-4 py-3 text-sm text-error">{error}</div>}

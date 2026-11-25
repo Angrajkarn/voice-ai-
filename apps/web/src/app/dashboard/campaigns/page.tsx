@@ -21,13 +21,14 @@ export default function CampaignsPage() {
   const [modal,setModal] = React.useState(false);
   const [form,setForm] = React.useState({name:'',description:'',purpose:'',ai_instructions:'',opening_script:'',language:'en-IN',voice_id:'alloy'});
   const [notice,setNotice] = React.useState('');
+  const [lastUpdated,setLastUpdated] = React.useState<Date | null>(null);
 
   const load = React.useCallback(async () => {
-    try { setError(''); const result = await campaignsApi.list({page:1,pageSize:100,search:search || undefined,status:status === 'all' ? undefined : status}); setItems(Array.isArray(result.data) ? result.data : []); }
+    try { setError(''); const result = await campaignsApi.list({page:1,pageSize:100,search:search || undefined,status:status === 'all' ? undefined : status}); setItems(Array.isArray(result.data) ? result.data : []); setLastUpdated(new Date()); }
     catch(e) { setError(e instanceof Error ? e.message : 'Campaign API request failed.'); }
     finally { setLoading(false); }
   },[search,status]);
-  React.useEffect(()=>{ setLoading(true); void load(); const timer=window.setInterval(()=>void load(),20000); return ()=>window.clearInterval(timer); },[load]);
+  React.useEffect(()=>{ setLoading(true); void load(); const timer=window.setInterval(()=>void load(),5000); return ()=>window.clearInterval(timer); },[load]);
 
   async function createCampaign(event: React.FormEvent) {
     event.preventDefault(); setBusy('create'); setError(''); setNotice('');
@@ -52,7 +53,7 @@ export default function CampaignsPage() {
   const running=items.filter(x=>x.status==='RUNNING').length;
   const totalCalls=items.reduce((sum,x)=>sum+x.completed_calls+x.failed_calls,0);
   return <DashboardLayout><div className="mx-auto max-w-[1500px] space-y-7">
-    <header className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[.22em] text-primary">Voice operations</p><h1 className="mt-2 text-3xl font-bold tracking-tight">Campaigns</h1><p className="mt-2 text-sm text-base-content/55">Create and operate campaigns backed by your live workspace API.</p></div><Button onClick={()=>setModal(true)}><Plus className="mr-2 h-4 w-4"/>Create campaign</Button></header>
+    <header className="flex flex-wrap items-end justify-between gap-4"><div><h1 className="text-3xl font-bold tracking-tight">Campaigns</h1><p className="mt-2 text-xs text-base-content/45">Live data · refreshes every 5 seconds{lastUpdated ? ` · Updated ${lastUpdated.toLocaleTimeString()}` : ''}</p></div><Button onClick={()=>setModal(true)}><Plus className="mr-2 h-4 w-4"/>Create campaign</Button></header>
     {error && <div role="alert" className="rounded-xl border border-error/25 bg-error/5 px-4 py-3 text-sm text-error">{error}</div>}{notice && <div role="status" className="rounded-xl border border-success/25 bg-success/5 px-4 py-3 text-sm text-success">{notice}</div>}
     <div className="grid gap-3 sm:grid-cols-3"><Card className="border-base-300/80"><CardContent className="flex items-center gap-3 p-4"><span className="rounded-xl bg-primary/10 p-3 text-primary"><Radio className="h-5 w-5"/></span><div><p className="text-xs text-base-content/50">Running now</p><p className="text-2xl font-bold tabular-nums">{running}</p></div></CardContent></Card><Card className="border-base-300/80"><CardContent className="flex items-center gap-3 p-4"><span className="rounded-xl bg-secondary/10 p-3 text-secondary"><Users className="h-5 w-5"/></span><div><p className="text-xs text-base-content/50">Campaigns in workspace</p><p className="text-2xl font-bold tabular-nums">{items.length}</p></div></CardContent></Card><Card className="border-base-300/80"><CardContent className="flex items-center gap-3 p-4"><span className="rounded-xl bg-success/10 p-3 text-success"><PhoneCall className="h-5 w-5"/></span><div><p className="text-xs text-base-content/50">Completed + failed calls</p><p className="text-2xl font-bold tabular-nums">{totalCalls.toLocaleString('en-IN')}</p></div></CardContent></Card></div>
     <Card className="overflow-hidden border-base-300/80 shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-base-300 p-4"><div className="relative min-w-[220px] flex-1 sm:max-w-sm"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-base-content/35"/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search campaigns…" className="h-10 w-full rounded-xl border border-base-300 bg-base-200/50 pl-9 pr-3 text-sm outline-none focus:border-primary"/></div><div className="flex items-center gap-2"><select value={status} onChange={e=>setStatus(e.target.value)} className="h-10 rounded-xl border border-base-300 bg-base-100 px-3 text-sm"><option value="all">All statuses</option>{['DRAFT','READY','RUNNING','PAUSED','COMPLETED','STOPPED'].map(s=><option key={s}>{s}</option>)}</select><Button size="icon" variant="outline" aria-label="Refresh campaigns" onClick={()=>{setLoading(true);void load();}} disabled={loading}><RefreshCw className={'h-4 w-4 '+(loading?'animate-spin':'')}/></Button></div></div>
