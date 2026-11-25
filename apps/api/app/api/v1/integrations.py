@@ -4,6 +4,7 @@ from uuid import UUID
 
 from app.core.dependencies import get_current_organization, get_current_user
 from app.db.session import get_db
+from app.models.enums import IntegrationType
 from app.models.organization import Organization
 from app.models.user import User
 from app.schemas.integration import (
@@ -21,7 +22,7 @@ router = APIRouter(prefix="/integrations", tags=["integrations"])
 
 @router.get("", response_model=list[IntegrationResponse])
 async def list_integrations(
-    integration_type: str | None = None,
+    integration_type: IntegrationType | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     organization: Organization = Depends(get_current_organization),

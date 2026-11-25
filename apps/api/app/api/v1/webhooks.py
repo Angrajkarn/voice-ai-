@@ -21,7 +21,7 @@ async def twilio_voice_webhook(
 ):
     """Handle incoming Twilio voice webhook - returns TwiML"""
     form_data = await request.form()
-    data = dict(form_data)
+    data = {key: value for key, value in form_data.items() if isinstance(value, str)}
 
     # Validate webhook signature
     twilio = TwilioService()
@@ -144,6 +144,8 @@ async def twilio_status_webhook(
     call_sid = data.get("CallSid")
     call_status = data.get("CallStatus")
     duration = data.get("CallDuration")
+    if not call_sid or not call_status:
+        raise HTTPException(status_code=400, detail="Missing Twilio call status fields")
 
     service = CallService(db)
     await service.handle_twilio_status(call_sid, call_status, duration)
@@ -174,6 +176,8 @@ async def twilio_recording_webhook(
     recording_sid = data.get("RecordingSid")
     recording_url = data.get("RecordingUrl")
     duration = data.get("RecordingDuration")
+    if not all((call_sid, recording_sid, recording_url, duration)):
+        raise HTTPException(status_code=400, detail="Missing Twilio recording fields")
 
     service = CallService(db)
     await service.handle_recording(call_sid, recording_sid, recording_url, duration)
@@ -203,6 +207,8 @@ async def twilio_transcription_webhook(
     call_sid = data.get("CallSid")
     transcription_sid = data.get("TranscriptionSid")
     transcription_text = data.get("TranscriptionText")
+    if not all((call_sid, transcription_sid, transcription_text)):
+        raise HTTPException(status_code=400, detail="Missing Twilio transcription fields")
 
     service = CallService(db)
     await service.handle_transcription(call_sid, transcription_sid, transcription_text)
