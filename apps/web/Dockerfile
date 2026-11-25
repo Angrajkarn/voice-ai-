@@ -1,47 +1,33 @@
-# Web Dockerfile - Multi-stage build
+# Web Dockerfile (build from the repository root)
 FROM node:22-alpine AS base
+WORKDIR /repo
 
-# Install dependencies only when needed
 FROM base AS deps
-WORKDIR /app
+COPY package.json ./
+COPY apps/web/package.json ./apps/web/package.json
+COPY packages/shared/package.json ./packages/shared/package.json
+RUN npm install --legacy-peer-deps
 
-# Copy package files
-COPY package.json package-lock.json* ./
-RUN npm ci
-
-# Generate Prisma client
-COPY prisma ./prisma/
-RUN npx prisma generate
-
-# Rebuild the source code only when needed
 FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /repo/node_modules ./node_modules
 COPY . .
+ENV DATABASE_URL=postgresql://postgres:postgres@localhost:5432/voiceai
+RUN npx prisma generate --schema=packages/shared/prisma/schema.prisma
+RUN npm run build --workspace=packages/shared
+RUN npm run build --workspace=apps/web
 
-# Build Next.js application
-RUN npm run build
+FROM node:22-alpine AS runner
+WORKDIR /repo
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 
-# Production image, copy all the files and run next
-FROM base AS runner
-WORKDIR /app
+RUN addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 nextjs
 
-ENV NODE_ENV production
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/public ./public
-
-# Automatically leverage output traces to reduce image size
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /repo/apps/web/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /repo/apps/web/.next/static ./apps/web/.next/static
 
 USER nextjs
-
 EXPOSE 3000
-
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
-
-CMD ["node", "server.js"]
+CMD ["node", "apps/web/server.js"]
