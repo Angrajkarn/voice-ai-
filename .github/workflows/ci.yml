@@ -48,7 +48,6 @@ jobs:
         run: |
           cd apps/api
           pip install -r requirements.txt
-          pip install pytest pytest-asyncio httpx
 
       - name: Run backend lint (ruff)
         run: |
@@ -151,7 +150,6 @@ jobs:
         run: |
           cd apps/api
           pip install -r requirements.txt
-          pip install pytest pytest-asyncio httpx pytest-cov
 
       - name: Wait for services
         run: |
