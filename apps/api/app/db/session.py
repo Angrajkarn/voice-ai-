@@ -2,12 +2,13 @@
 
 
 from app.core.config import settings
+from app.models.base import Base
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import declarative_base
 
 # Global variables for engine and session factory
 engine = None
 AsyncSessionLocal = None
+
 
 def get_engine():
     """Get or create async engine lazily"""
@@ -22,6 +23,7 @@ def get_engine():
         )
     return engine
 
+
 def get_session_factory():
     """Get or create async session factory lazily"""
     global AsyncSessionLocal
@@ -33,9 +35,6 @@ def get_session_factory():
             autoflush=False,
         )
     return AsyncSessionLocal
-
-# Base class for models (doesn't require engine)
-Base = declarative_base()
 
 
 async def get_db() -> "AsyncSession":
@@ -54,7 +53,7 @@ async def get_db() -> "AsyncSession":
 
 async def init_db() -> None:
     """Initialize database - create tables"""
-    # Import all models to register them
+    # Import all models to register them on the shared Base metadata.
     from app.models import (  # noqa: F401
         audit_log,
         automation_log,
