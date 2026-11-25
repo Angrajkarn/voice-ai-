@@ -49,9 +49,10 @@ class CustomerService:
         if suppressed:
             raise ValueError(f"Phone number {phone} is on suppression list")
 
+        customer_values = data.model_dump()
+        customer_values["phone"] = phone
         customer = Customer(
-            **data.model_dump(),
-            phone=phone,
+            **customer_values,
             organization_id=organization_id,
         )
         self.db.add(customer)
@@ -125,9 +126,10 @@ class CustomerService:
                     continue
 
                 # Create customer
+                customer_values = customer_data.model_dump()
+                customer_values["phone"] = phone
                 customer = Customer(
-                    **customer_data.model_dump(),
-                    phone=phone,
+                    **customer_values,
                     organization_id=organization_id,
                 )
                 self.db.add(customer)
@@ -482,15 +484,20 @@ class CustomerService:
             # Create callback record
             from app.models.callback import Callback
             from app.models.enums import CallbackStatus
+            selected_campaign_id = campaign_id or await self.db.scalar(
+                select(CampaignCustomer.campaign_id)
+                .where(CampaignCustomer.customer_id == customer_id)
+                .order_by(CampaignCustomer.assigned_at.desc())
+                .limit(1)
+            )
+            if selected_campaign_id is None:
+                continue
+
             callback = Callback(
                 status=CallbackStatus.SCHEDULED,
                 scheduled_at=callback_date,
                 scheduled_timezone=customer.timezone,
-                campaign_id=campaign_id or (await self.db.scalar(
-                    select(CampaignCustomer.campaign_id).where(
-                        CampaignCustomer.customer_id == customer_id
-                    ).order_by(CampaignCustomer.assigned_at.desc()).limit(1)
-                )) or customer.campaigns[0].campaign_id if customer.campaigns else None,
+                campaign_id=selected_campaign_id,
                 customer_id=customer_id,
             )
             self.db.add(callback)
