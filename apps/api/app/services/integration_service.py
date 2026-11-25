@@ -118,8 +118,13 @@ class IntegrationService:
         try:
             account = client.api.accounts(config.get("account_sid")).fetch()
             phone_number = config.get("phone_number", "")
-            if not phone_number.startswith("+"): return {"success": False, "error": "Outgoing caller ID must use E.164 format, e.g. +14155550123."}
-            return {"success": True, "message": f"Twilio connected: {account.friendly_name}. Caller ID: {phone_number}."}
+            if not phone_number.startswith("+"):
+                return {"success": False, "error": "Outgoing caller ID must use E.164 format, e.g. +14155550123."}
+            owned = client.incoming_phone_numbers.list(phone_number=phone_number, limit=1)
+            verified = client.outgoing_caller_ids.list(phone_number=phone_number, limit=1)
+            if not owned and not verified:
+                return {"success": False, "error": "This number is not a Twilio number or a verified caller ID on this account."}
+            return {"success": True, "message": f"Twilio connected: {account.friendly_name}. Caller ID verified: {phone_number}."}
         except TwilioRestException as e:
             return {"success": False, "error": f"Twilio error: {e.msg}"}
 
