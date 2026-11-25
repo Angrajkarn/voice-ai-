@@ -3,7 +3,8 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig, AxiosRequestConfig } from 'axios';
 import { signOut } from 'next-auth/react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
+// Keep API calls same-origin; the Next.js route handler proxies them to FastAPI at runtime.
+const API_URL = '/backend';
 
 class ApiClient {
   private client: AxiosInstance;
