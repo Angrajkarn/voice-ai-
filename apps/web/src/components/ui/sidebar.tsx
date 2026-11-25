@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
-  LayoutDashboard, Users, Phone, Bot, Activity, History, FileText, Mic,
+  LayoutDashboard, Users, Bot, Activity, History, FileText, Mic,
   Table, Settings, BarChart3, Zap, Shield, Menu, X, ChevronLeft,
   ChevronRight, Headphones, Sparkles
 } from 'lucide-react';
