@@ -11,8 +11,8 @@ _PREFIX = "enc:v1:"
 
 def _fernet() -> Fernet:
     secret = settings.ENCRYPTION_KEY
-    if not secret or secret == "your-encryption-key-change-in-production":
-        raise RuntimeError("Set a strong ENCRYPTION_KEY before saving provider credentials.")
+    if not secret or secret == "your-encryption-key-change-in-production" or len(secret) < 32:
+        raise RuntimeError("Set a random ENCRYPTION_KEY with at least 32 characters before saving provider credentials.")
     key = base64.urlsafe_b64encode(hashlib.sha256(secret.encode("utf-8")).digest())
     return Fernet(key)
 
