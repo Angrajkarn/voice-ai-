@@ -8,7 +8,8 @@ from uuid import UUID
 from app.models.call import Call
 from app.models.callback import Callback
 from app.models.campaign import Campaign
-from app.models.enums import CampaignStatus
+from app.models.enums import CampaignStatus, CustomerStatus, IntegrationType
+from app.models.integration import Integration
 from app.models.campaign_customer import CampaignCustomer
 from app.models.customer import Customer
 from app.schemas.campaign import CampaignCreate, CampaignMetrics, CampaignUpdate
@@ -114,12 +115,31 @@ class CampaignService:
 
     async def start(self, campaign_id: UUID, organization_id: UUID) -> Campaign | None:
         campaign = await self.get_by_id(campaign_id, organization_id)
-        if not campaign:
-            return None
-
-        if campaign.status not in ["DRAFT", "READY", "PAUSED", "STOPPED"]:
-            raise ValueError(f"Cannot start campaign in status: {campaign.status}")
-
+        if not campaign: return None
+        if campaign.status not in ["DRAFT", "READY", "PAUSED", "STOPPED"]: raise ValueError(f"Cannot start campaign in status: {campaign.status}")
+        if len((campaign.ai_instructions or "").strip()) < 50: raise ValueError("AI instructions must be at least 50 characters before starting.")
+        if len((campaign.opening_script or "").strip()) < 20: raise ValueError("Opening script must be at least 20 characters before starting.")
+        integration = await self.db.scalar(select(Integration).where(and_(
+            Integration.organization_id == organization_id, Integration.type == IntegrationType.TWILIO,
+            Integration.is_active.is_(True), or_(Integration.campaign_id == campaign.id, Integration.campaign_id.is_(None)),
+        )).order_by((Integration.campaign_id == campaign.id).desc()).limit(1))
+        config = integration.config if integration else {}
+        if isinstance(config, str):
+            import json
+            config = json.loads(config)
+        from_number = config.get("phone_number") if config else None
+        if not from_number: raise ValueError("Connect Twilio and configure an outgoing phone number in Integrations before starting.")
+        members = await self.db.execute(select(Customer).join(CampaignCustomer, CampaignCustomer.customer_id == Customer.id).where(and_(
+            CampaignCustomer.campaign_id == campaign.id, Customer.organization_id == organization_id,
+            Customer.do_not_call.is_(False), Customer.status.notin_([CustomerStatus.DO_NOT_CALL, CustomerStatus.OPTED_OUT]),
+        )))
+        customers = list(members.scalars().all())
+        if not customers: raise ValueError("Add at least one eligible customer to this campaign before starting.")
+        existing_ids = set((await self.db.scalars(select(Call.customer_id).where(Call.campaign_id == campaign.id))).all())
+        for customer in customers:
+            if customer.id not in existing_ids and customer.call_attempts < customer.max_call_attempts:
+                self.db.add(Call(campaign_id=campaign.id, customer_id=customer.id, from_number=from_number, to_number=customer.phone))
+        campaign.total_customers = len(customers)
         campaign.status = CampaignStatus.RUNNING
         campaign.started_at = datetime.utcnow()
         await self.db.commit()
