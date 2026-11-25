@@ -2,321 +2,38 @@
 
 import * as React from 'react';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { customersApi, api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { cn, formatPhoneNumber, getStatusColor } from '@/lib/utils';
-import {
-  Plus,
-  Search,
-  Filter,
-  Download,
-  Upload,
-  Phone,
-  Mail,
-  User,
-  Building2,
-  MapPin,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  Eye,
-} from 'lucide-react';
+import { Plus, RefreshCw, Search, Upload, Download, Trash2, X, Users, Phone, Mail } from 'lucide-react';
 
-const mockCustomers = [
-  { id: '1', firstName: 'Rahul', lastName: 'Sharma', email: 'rahul.sharma@example.com', phone: '+919876543210', company: 'TechCorp Solutions', location: 'Bangalore', status: 'HOT_LEAD', interestLevel: 'HOT', language: 'en-IN', callAttempts: 2, lastCallAt: '2025-01-10T10:30:00Z', nextCallbackAt: null },
-  { id: '2', firstName: 'Priya', lastName: 'Patel', email: 'priya.patel@example.com', phone: '+919876543211', company: 'InnovateLabs', location: 'Mumbai', status: 'WARM_LEAD', interestLevel: 'WARM', language: 'hinglish', callAttempts: 1, lastCallAt: '2025-01-09T14:15:00Z', nextCallbackAt: '2025-01-15T11:00:00Z' },
-  { id: '3', firstName: 'Amit', lastName: 'Kumar', email: 'amit.kumar@example.com', phone: '+919876543212', company: 'DataDriven Inc', location: 'Delhi', status: 'COLD_LEAD', interestLevel: 'COLD', language: 'hi-IN', callAttempts: 3, lastCallAt: '2025-01-08T09:45:00Z', nextCallbackAt: null },
-  { id: '4', firstName: 'Sneha', lastName: 'Reddy', email: 'sneha.reddy@example.com', phone: '+919876543213', company: 'CloudScale', location: 'Hyderabad', status: 'HOT_LEAD', interestLevel: 'HOT', language: 'en-IN', callAttempts: 1, lastCallAt: '2025-01-10T16:20:00Z', nextCallbackAt: null },
-  { id: '5', firstName: 'Vikram', lastName: 'Singh', email: 'vikram.singh@example.com', phone: '+919876543214', company: 'GrowthHub', location: 'Pune', status: 'NEW', interestLevel: 'UNKNOWN', language: 'hinglish', callAttempts: 0, lastCallAt: null, nextCallbackAt: null },
-  { id: '6', firstName: 'Anjali', lastName: 'Gupta', email: 'anjali.gupta@example.com', phone: '+919876543215', company: 'FinTech Pro', location: 'Chennai', status: 'NOT_INTERESTED', interestLevel: 'COLD', language: 'en-IN', callAttempts: 2, lastCallAt: '2025-01-07T11:30:00Z', nextCallbackAt: null },
-  { id: '7', firstName: 'Rohit', lastName: 'Verma', email: 'rohit.verma@example.com', phone: '+919876543216', company: 'EduTech Solutions', location: 'Kolkata', status: 'CALLBACK_REQUESTED', interestLevel: 'WARM', language: 'en-IN', callAttempts: 1, lastCallAt: '2025-01-09T15:45:00Z', nextCallbackAt: '2025-01-14T10:00:00Z' },
-  { id: '8', firstName: 'Kavya', lastName: 'Nair', email: 'kavya.nair@example.com', phone: '+919876543217', company: 'HealthFirst', location: 'Kochi', status: 'DO_NOT_CALL', interestLevel: 'UNKNOWN', language: 'en-IN', callAttempts: 0, lastCallAt: null, nextCallbackAt: null },
-];
+type Customer = { id:string; first_name:string; last_name:string; email?:string|null; phone:string; company?:string|null; location?:string|null; status:string; interest_level:string; call_attempts:number; last_call_at?:string|null; next_callback_at?:string|null; do_not_call:boolean };
+const tone:Record<string,'success'|'warning'|'destructive'|'outline'|'default'>={HOT_LEAD:'success',WARM_LEAD:'warning',COLD_LEAD:'outline',DO_NOT_CALL:'destructive',OPTED_OUT:'destructive',NEW:'default',CONTACTED:'default',CALLBACK_REQUESTED:'warning',NOT_INTERESTED:'outline'};
 
-export default function CustomersPage() {
-  const [search, setSearch] = React.useState('');
-  const [statusFilter, setStatusFilter] = React.useState('all');
-  const [page, setPage] = React.useState(1);
-  const [pageSize, setPageSize] = React.useState(10);
-  const [selectedCustomers, setSelectedCustomers] = React.useState<string[]>([]);
-  const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [editingCustomer, setEditingCustomer] = React.useState<any>(null);
-
-  const filteredCustomers = mockCustomers.filter(c => {
-    const matchesSearch = c.firstName.toLowerCase().includes(search.toLowerCase()) ||
-      c.lastName.toLowerCase().includes(search.toLowerCase()) ||
-      c.phone.includes(search) ||
-      c.email?.toLowerCase().includes(search.toLowerCase()) ||
-      c.company?.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  const paginatedCustomers = filteredCustomers.slice((page - 1) * pageSize, page * pageSize);
-  const totalPages = Math.ceil(filteredCustomers.length / pageSize);
-
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedCustomers(paginatedCustomers.map(c => c.id));
-    } else {
-      setSelectedCustomers([]);
-    }
-  };
-
-  const handleSelect = (id: string, checked: boolean) => {
-    setSelectedCustomers(prev => checked ? [...prev, id] : prev.filter(i => i !== id));
-  };
-
-  const openEditDialog = (customer: any) => {
-    setEditingCustomer(customer);
-    setDialogOpen(true);
-  };
-
-  const closeDialog = () => {
-    setDialogOpen(false);
-    setEditingCustomer(null);
-  };
-
-  return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
-            <p className="text-muted-foreground">Manage your customer database</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
-            <Button variant="outline" size="sm">
-              <Upload className="mr-2 h-4 w-4" />
-              Import CSV
-            </Button>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Customer
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px]">
-                <DialogHeader>
-                  <DialogTitle>{editingCustomer ? 'Edit Customer' : 'Add New Customer'}</DialogTitle>
-                </DialogHeader>
-                <form className="space-y-4">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="firstName">First Name *</Label>
-                      <Input id="firstName" defaultValue={editingCustomer?.firstName} required />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="lastName">Last Name *</Label>
-                      <Input id="lastName" defaultValue={editingCustomer?.lastName} required />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="email">Email</Label>
-                      <Input id="email" type="email" defaultValue={editingCustomer?.email} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="phone">Phone *</Label>
-                      <Input id="phone" defaultValue={editingCustomer?.phone} required placeholder="+919876543210" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="company">Company</Label>
-                      <Input id="company" defaultValue={editingCustomer?.company} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="location">Location</Label>
-                      <Input id="location" defaultValue={editingCustomer?.location} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="language">Language</Label>
-                      <Select defaultValue={editingCustomer?.language || 'en-IN'}>
-                        <SelectTrigger id="language">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="en-IN">English (India)</SelectItem>
-                          <SelectItem value="hi-IN">Hindi</SelectItem>
-                          <SelectItem value="hinglish">Hinglish</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="status">Status</Label>
-                      <Select defaultValue={editingCustomer?.status || 'NEW'}>
-                        <SelectTrigger id="status">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="NEW">New</SelectItem>
-                          <SelectItem value="HOT_LEAD">Hot Lead</SelectItem>
-                          <SelectItem value="WARM_LEAD">Warm Lead</SelectItem>
-                          <SelectItem value="COLD_LEAD">Cold Lead</SelectItem>
-                          <SelectItem value="NOT_INTERESTED">Not Interested</SelectItem>
-                          <SelectItem value="CALLBACK_REQUESTED">Callback Requested</SelectItem>
-                          <SelectItem value="DO_NOT_CALL">Do Not Call</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-2 pt-4">
-                    <Button type="button" variant="outline" onClick={closeDialog}>Cancel</Button>
-                    <Button type="submit">{editingCustomer ? 'Update' : 'Create'}</Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
-
-        {/* Search & Filters */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search customers..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="All Statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="NEW">New</SelectItem>
-                  <SelectItem value="HOT_LEAD">Hot Lead</SelectItem>
-                  <SelectItem value="WARM_LEAD">Warm Lead</SelectItem>
-                  <SelectItem value="COLD_LEAD">Cold Lead</SelectItem>
-                  <SelectItem value="NOT_INTERESTED">Not Interested</SelectItem>
-                  <SelectItem value="CALLBACK_REQUESTED">Callback Requested</SelectItem>
-                  <SelectItem value="DO_NOT_CALL">Do Not Call</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button variant="outline" size="sm">
-                <Filter className="mr-2 h-4 w-4" />
-                Filters
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Customers Table */}
-        <Card>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <input
-                        type="checkbox"
-                        checked={selectedCustomers.length === paginatedCustomers.length && paginatedCustomers.length > 0}
-                        onChange={event => handleSelectAll(event.target.checked)}
-                        className="rounded border-input"
-                      />
-                    </TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Interest</TableHead>
-                    <TableHead className="text-right">Attempts</TableHead>
-                    <TableHead>Last Call</TableHead>
-                    <TableHead className="w-12"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedCustomers.map(customer => (
-                    <TableRow key={customer.id}>
-                      <TableCell>
-                        <input
-                          type="checkbox"
-                          checked={selectedCustomers.includes(customer.id)}
-                          onChange={e => handleSelect(customer.id, e.target.checked)}
-                          className="rounded border-input"
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">{customer.firstName} {customer.lastName}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1">
-                          <span className="flex items-center gap-1 text-sm">
-                            <Phone className="h-3 w-3" />
-                            {formatPhoneNumber(customer.phone)}
-                          </span>
-                          {customer.email && (
-                            <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                              <Mail className="h-3 w-3" />
-                              {customer.email}
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{customer.company}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {customer.location}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusColor(customer.status).includes('red') ? 'destructive' : getStatusColor(customer.status).includes('green') ? 'success' : getStatusColor(customer.status).includes('yellow') ? 'warning' : getStatusColor(customer.status).includes('purple') ? 'default' : 'outline'}>
-                          {customer.status.replace('_', ' ')}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={customer.interestLevel === 'HOT' ? 'destructive' : customer.interestLevel === 'WARM' ? 'warning' : customer.interestLevel === 'COLD' ? 'info' : 'outline'}>
-                          {customer.interestLevel}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-mono">{customer.callAttempts}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {customer.lastCallAt ? new Date(customer.lastCallAt).toLocaleDateString() : '-'}
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(customer)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            {/* Pagination */}
-            <div className="flex items-center justify-between p-4 border-t">
-              <p className="text-sm text-muted-foreground">
-                Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, filteredCustomers.length)} of {filteredCustomers.length} customers
-              </p>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
-                <span className="px-3 text-sm">{page} / {totalPages}</span>
-                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next</Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </DashboardLayout>
-  );
+export default function CustomersPage(){
+ const [items,setItems]=React.useState<Customer[]>([]); const [search,setSearch]=React.useState(''); const [status,setStatus]=React.useState('all'); const [loading,setLoading]=React.useState(true); const [busy,setBusy]=React.useState(''); const [error,setError]=React.useState(''); const [notice,setNotice]=React.useState(''); const [modal,setModal]=React.useState(false); const [editing,setEditing]=React.useState<Customer|null>(null); const [file,setFile]=React.useState<File|null>(null);
+ const empty={first_name:'',last_name:'',email:'',phone:'',company:'',location:'',language:'en-IN',timezone:'Asia/Kolkata'};
+ const [form,setForm]=React.useState(empty);
+ const load=React.useCallback(async()=>{try{setError('');const r=await customersApi.list({page:1,pageSize:100,search:search||undefined,status:status==='all'?undefined:status});setItems(Array.isArray(r.data)?r.data:[]);}catch(e){setError(e instanceof Error?e.message:'Customer API request failed.');}finally{setLoading(false);}},[search,status]);
+ React.useEffect(()=>{setLoading(true);void load();const t=window.setInterval(()=>void load(),20000);return()=>window.clearInterval(t);},[load]);
+ function openCreate(){setEditing(null);setForm(empty);setModal(true);}
+ function openEdit(c:Customer){setEditing(c);setForm({first_name:c.first_name,last_name:c.last_name,email:c.email||'',phone:c.phone,company:c.company||'',location:c.location||'',language:'en-IN',timezone:'Asia/Kolkata'});setModal(true);}
+ async function save(e:React.FormEvent){e.preventDefault();setBusy('save');setError('');setNotice('');try{if(editing)await customersApi.update(editing.id,form);else await customersApi.create(form);setModal(false);setNotice(editing?'Customer updated.':'Customer added to your workspace.');await load();}catch(x){setError(x instanceof Error?x.message:'Customer could not be saved.');}finally{setBusy('');}}
+ async function remove(c:Customer){if(!window.confirm('Delete '+c.first_name+' '+c.last_name+' from this workspace?'))return;setBusy(c.id);try{await customersApi.delete(c.id);setNotice('Customer deleted.');await load();}catch(e){setError(e instanceof Error?e.message:'Delete failed.');}finally{setBusy('');}}
+ async function importCsv(){if(!file)return;setBusy('import');setError('');try{const result=await api.upload<any>('/customers/import/csv',file);setNotice('Import processed: '+JSON.stringify(result));setFile(null);await load();}catch(e){setError(e instanceof Error?e.message:'CSV import failed.');}finally{setBusy('');}}
+ async function exportCsv(){setBusy('export');try{const blob=await api.get<Blob>('/customers/export',{format:'csv'},{responseType:'blob'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='voiceai-customers.csv';a.click();URL.revokeObjectURL(url);}catch(e){setError(e instanceof Error?e.message:'Export failed.');}finally{setBusy('');}}
+ return <DashboardLayout><div className="mx-auto max-w-[1500px] space-y-7">
+  <header className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[.22em] text-primary">Customer intelligence</p><h1 className="mt-2 text-3xl font-bold tracking-tight">Customers</h1><p className="mt-2 text-sm text-base-content/55">Manage actual contacts stored in your VoiceAI workspace.</p></div><Button onClick={openCreate}><Plus className="mr-2 h-4 w-4"/>Add customer</Button></header>
+  {error&&<div role="alert" className="rounded-xl border border-error/25 bg-error/5 px-4 py-3 text-sm text-error">{error}</div>}{notice&&<div role="status" className="rounded-xl border border-success/25 bg-success/5 px-4 py-3 text-sm text-success">{notice}</div>}
+  <div className="grid gap-3 sm:grid-cols-3"><Card className="border-base-300/80 p-4"><div className="flex items-center gap-3"><span className="rounded-xl bg-primary/10 p-3 text-primary"><Users className="h-5 w-5"/></span><div><p className="text-xs text-base-content/50">Loaded contacts</p><p className="text-2xl font-bold">{items.length}</p></div></div></Card><Card className="border-base-300/80 p-4"><div className="flex items-center gap-3"><span className="rounded-xl bg-success/10 p-3 text-success"><Phone className="h-5 w-5"/></span><div><p className="text-xs text-base-content/50">Hot leads in view</p><p className="text-2xl font-bold">{items.filter(c=>c.interest_level==='HOT'||c.status==='HOT_LEAD').length}</p></div></div></Card><Card className="border-base-300/80 p-4"><div className="flex items-center gap-3"><span className="rounded-xl bg-warning/10 p-3 text-warning"><Mail className="h-5 w-5"/></span><div><p className="text-xs text-base-content/50">Do not call</p><p className="text-2xl font-bold">{items.filter(c=>c.do_not_call||c.status==='DO_NOT_CALL'||c.status==='OPTED_OUT').length}</p></div></div></Card></div>
+  <Card className="overflow-hidden border-base-300/80 shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-base-300 p-4"><div className="relative min-w-[220px] flex-1 sm:max-w-sm"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-base-content/35"/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name, email, phone…" className="h-10 w-full rounded-xl border border-base-300 bg-base-200/50 pl-9 pr-3 text-sm outline-none focus:border-primary"/></div><div className="flex flex-wrap items-center gap-2"><select value={status} onChange={e=>setStatus(e.target.value)} className="h-10 rounded-xl border border-base-300 bg-base-100 px-3 text-sm"><option value="all">All statuses</option>{['NEW','CONTACTED','HOT_LEAD','WARM_LEAD','COLD_LEAD','NOT_INTERESTED','CALLBACK_REQUESTED','DO_NOT_CALL','OPTED_OUT'].map(s=><option key={s}>{s}</option>)}</select><Button variant="outline" size="sm" onClick={()=>void exportCsv()} disabled={busy==='export'}><Download className="mr-1.5 h-4 w-4"/>Export</Button><label className="flex h-9 cursor-pointer items-center gap-1.5 rounded-xl border border-base-300 px-3 text-xs font-semibold hover:bg-base-200"><Upload className="h-3.5 w-3.5"/>CSV<input type="file" accept=".csv,text/csv" className="hidden" onChange={e=>setFile(e.target.files?.[0]||null)}/></label>{file&&<Button size="sm" onClick={()=>void importCsv()} disabled={busy==='import'}>{busy==='import'?'Importing…':'Import '+file.name}</Button>}<Button size="icon" variant="outline" aria-label="Refresh customers" onClick={()=>{setLoading(true);void load();}} disabled={loading}><RefreshCw className={'h-4 w-4 '+(loading?'animate-spin':'')}/></Button></div></div>
+   {loading&&items.length===0?<div className="p-12 text-center text-sm text-base-content/50">Loading customers from API…</div>:items.length===0?<div className="px-6 py-16 text-center"><span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-base-200 text-base-content/35"><Users className="h-5 w-5"/></span><p className="mt-3 font-semibold">No customer records</p><p className="mt-1 text-sm text-base-content/50">No real contacts match this view. Add a customer or import your CSV file.</p><Button className="mt-4" onClick={openCreate}><Plus className="mr-2 h-4 w-4"/>Add customer</Button></div>:<div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-base-200/60 text-[10px] uppercase tracking-wider text-base-content/45"><tr><th className="px-5 py-3">Contact</th><th className="px-5 py-3">Phone</th><th className="px-5 py-3">Company / location</th><th className="px-5 py-3">Lead status</th><th className="px-5 py-3">Activity</th><th className="px-5 py-3 text-right">Actions</th></tr></thead><tbody className="divide-y divide-base-300/70">{items.map(c=><tr key={c.id} className="transition-colors hover:bg-base-200/35"><td className="px-5 py-4"><p className="font-semibold">{c.first_name} {c.last_name}</p><p className="mt-0.5 text-xs text-base-content/45">{c.email||'No email provided'}</p></td><td className="px-5 py-4 font-mono text-xs">{c.phone}</td><td className="px-5 py-4"><p>{c.company||'—'}</p><p className="text-xs text-base-content/45">{c.location||'—'}</p></td><td className="px-5 py-4"><Badge variant={tone[c.status]||'outline'}>{c.status.replaceAll('_',' ')}</Badge>{c.do_not_call&&<p className="mt-1 text-[10px] font-semibold text-error">Do not call</p>}</td><td className="px-5 py-4"><p>{c.call_attempts||0} attempts</p><p className="text-xs text-base-content/45">{c.last_call_at?new Date(c.last_call_at).toLocaleDateString():'No calls yet'}</p></td><td className="px-5 py-4"><div className="flex justify-end gap-1"><Button size="sm" variant="outline" onClick={()=>openEdit(c)}>Edit</Button><Button size="icon" variant="ghost" aria-label="Delete customer" disabled={busy===c.id} onClick={()=>void remove(c)}><Trash2 className="h-4 w-4 text-error"/></Button></div></td></tr>)}</tbody></table></div>}
+  </Card>
+  {modal&&<div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"><div className="w-full max-w-xl rounded-2xl border border-base-300 bg-base-100 shadow-2xl"><div className="flex items-center justify-between border-b border-base-300 p-5"><div><h2 className="font-bold">{editing?'Edit customer':'Add customer'}</h2><p className="mt-1 text-xs text-base-content/50">Saved directly to your workspace customer database.</p></div><Button size="icon" variant="ghost" onClick={()=>setModal(false)}><X className="h-4 w-4"/></Button></div><form onSubmit={save} className="grid gap-4 p-5 sm:grid-cols-2">
+   {(['first_name','last_name','email','phone','company','location'] as const).map(key=><label key={key} className="space-y-1.5"><span className="text-xs font-semibold capitalize">{key.replace('_',' ')}{['first_name','last_name','phone'].includes(key)?' *':''}</span><input required={['first_name','last_name','phone'].includes(key)} type={key==='email'?'email':'text'} value={form[key]} onChange={e=>setForm({...form,[key]:e.target.value})} placeholder={key==='phone'?'+919876543210':''} className="h-10 w-full rounded-xl border border-base-300 bg-base-200/50 px-3 text-sm"/></label>)}
+   <label className="space-y-1.5"><span className="text-xs font-semibold">Language</span><select value={form.language} onChange={e=>setForm({...form,language:e.target.value})} className="h-10 w-full rounded-xl border border-base-300 bg-base-100 px-3 text-sm"><option value="en-IN">English (India)</option><option value="hi-IN">Hindi</option><option value="hinglish">Hinglish</option><option value="en-US">English (US)</option><option value="en-GB">English (UK)</option></select></label>
+   <div className="flex justify-end gap-2 pt-2 sm:col-span-2"><Button type="button" variant="outline" onClick={()=>setModal(false)}>Cancel</Button><Button type="submit" disabled={busy==='save'}>{busy==='save'?'Saving…':editing?'Save changes':'Add customer'}</Button></div>
+  </form></div></div>}
+ </div></DashboardLayout>;
 }
