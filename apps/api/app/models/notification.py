@@ -3,9 +3,9 @@
 
 from app.models.base import BaseModel
 from app.models.enums import NotificationType
-from sqlalchemy import JSON, Boolean, Column, DateTime, ForeignKey, Index, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, String, Text
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 
@@ -15,7 +15,7 @@ class Notification(BaseModel):
     type = Column(SQLEnum(NotificationType), nullable=False)
     title = Column(String(200), nullable=False)
     message = Column(Text, nullable=False)
-    data = Column(JSON, default={}, nullable=False)
+    data = Column(JSONB, default=dict, nullable=False)
     is_read = Column(Boolean, default=False, nullable=False)
     read_at = Column(DateTime(timezone=True), nullable=True)
 
