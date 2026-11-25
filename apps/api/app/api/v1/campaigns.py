@@ -60,8 +60,10 @@ async def create_campaign(
     organization: Organization = Depends(get_current_organization),
 ):
     service = CampaignService(db)
-    campaign = await service.create(data, current_user.id, organization.id)
-    return campaign
+    try:
+        return await service.create(data, current_user.id, organization.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.get("/{campaign_id}", response_model=CampaignResponse)
