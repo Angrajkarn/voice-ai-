@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import {
-  Bell, Moon, Sun, User, LogOut, Settings, Building2, CheckCheck,
-  Command, Search, ChevronDown, Activity, CircleHelp
+  Bell, Moon, Sun, User, LogOut, Settings, Building2, ChevronDown
 } from 'lucide-react';
 import { Sidebar, MobileSidebar, MobileSidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
