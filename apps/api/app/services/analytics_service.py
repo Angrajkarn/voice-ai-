@@ -154,7 +154,7 @@ class AnalyticsService:
         daily_data = []
         for row in calls:
             daily_data.append(CallAnalytics(
-                date=row.date.isoformat() if row.date is not None else "",
+                date=row.date if isinstance(row.date, date) else date.today(),
                 total_calls=row.total_calls or 0,
                 completed_calls=row.completed_calls or 0,
                 failed_calls=row.failed_calls or 0,
@@ -186,7 +186,7 @@ class AnalyticsService:
             )
             .group_by(func.date(Callback.scheduled_at))
         )
-        callback_map = {str(row.date): row.count for row in callbacks}
+        callback_map = {row.date: row.count for row in callbacks if row.date is not None}
 
         # Opt-outs
         opt_outs = await self.db.execute(
@@ -202,7 +202,7 @@ class AnalyticsService:
             )
             .group_by(func.date(Customer.opted_out_at))
         )
-        opt_out_map = {str(row.date): row.count for row in opt_outs}
+        opt_out_map = {row.date: row.count for row in opt_outs if row.date is not None}
 
         # Merge callback and opt-out data
         for day in daily_data:
@@ -278,7 +278,7 @@ class AnalyticsService:
         daily_data = []
         for row in calls:
             daily_data.append(CallAnalytics(
-                date=row.date.isoformat() if isinstance(row.date, date) else str(row.date),
+                date=row.date if isinstance(row.date, date) else date.today(),
                 total_calls=row.total_calls or 0,
                 completed_calls=row.completed_calls or 0,
                 failed_calls=row.failed_calls or 0,
@@ -369,8 +369,8 @@ class AnalyticsService:
                     CampaignCustomer.campaign_id == campaign_id
                 )
 
-            result = await self.db.execute(customer_query.order_by(Customer.created_at.desc()))
-            customers = result.scalars().all()
+            customer_result = await self.db.execute(customer_query.order_by(Customer.created_at.desc()))
+            customers = customer_result.scalars().all()
 
             writer.writerow([
                 "Customer ID", "First Name", "Last Name", "Email", "Phone",
@@ -389,8 +389,8 @@ class AnalyticsService:
 
         elif report_type == "campaigns":
             campaign_query = select(Campaign).where(Campaign.organization_id == organization_id)
-            result = await self.db.execute(campaign_query.order_by(Campaign.created_at.desc()))
-            campaigns = result.scalars().all()
+            campaign_result = await self.db.execute(campaign_query.order_by(Campaign.created_at.desc()))
+            campaigns = campaign_result.scalars().all()
 
             writer.writerow([
                 "Campaign ID", "Name", "Status", "Total Customers", "Completed Calls",
