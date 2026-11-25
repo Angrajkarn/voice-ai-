@@ -372,7 +372,7 @@ export async function getDailyCallAnalytics(
 
   const optOuts = await prisma.customer.findMany({
     where: {
-      campaigns: { some: { campaignId } },
+      campaignCustomers: { some: { campaignId } },
       optedOutAt: { gte: startDate },
     },
     select: { optedOutAt: true },
