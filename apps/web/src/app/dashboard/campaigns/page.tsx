@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
-import { api, campaignsApi } from '@/lib/api';
+import { api, campaignsApi, customersApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,7 @@ import { Plus, RefreshCw, Search, Play, Pause, Square, Trash2, X, Radio, Users, 
 
 type Campaign = { id: string; name: string; description?: string | null; purpose: string; status: string; voice_id?:string; language?:string; total_customers: number; completed_calls: number; failed_calls: number; interested_count: number; callback_count: number; created_at: string };
 type TwilioConnection={id:string;type:string;is_active:boolean;config?:{phone_number?:string}};
+type CustomerOption={id:string;first_name:string;last_name:string;phone:string;do_not_call:boolean;status:string};
 const statusTone: Record<string, 'success'|'warning'|'destructive'|'outline'|'default'> = { RUNNING:'success', READY:'success', PAUSED:'warning', STOPPED:'destructive', DRAFT:'outline', COMPLETED:'default' };
 
 export default function CampaignsPage() {
@@ -24,6 +25,8 @@ export default function CampaignsPage() {
   const [notice,setNotice] = React.useState('');
   const [lastUpdated,setLastUpdated] = React.useState<Date | null>(null);
   const [twilioConnection,setTwilioConnection] = React.useState<TwilioConnection|null>(null);
+  const [customerOptions,setCustomerOptions] = React.useState<CustomerOption[]>([]);
+  const [selectedCustomers,setSelectedCustomers] = React.useState<string[]>([]);
 
   const load = React.useCallback(async () => {
     try { setError(''); const result = await campaignsApi.list({page:1,pageSize:100,search:search || undefined,status:status === 'all' ? undefined : status}); setItems(Array.isArray(result.data) ? result.data : []); setLastUpdated(new Date()); }
@@ -32,10 +35,11 @@ export default function CampaignsPage() {
   },[search,status]);
   React.useEffect(()=>{ setLoading(true); void load(); const timer=window.setInterval(()=>void load(),5000); return ()=>window.clearInterval(timer); },[load]);
   React.useEffect(()=>{let active=true;const refresh=async()=>{try{const rows=await api.get<TwilioConnection[]>('/integrations?integration_type=TWILIO');if(active)setTwilioConnection(rows.find(x=>x.is_active)||null);}catch{if(active)setTwilioConnection(null);}};void refresh();const t=window.setInterval(()=>void refresh(),15000);return()=>{active=false;window.clearInterval(t);};},[]);
+  React.useEffect(()=>{let active=true;customersApi.list({page:1,pageSize:100}).then(r=>{if(active)setCustomerOptions(Array.isArray(r.data)?r.data:[]);}).catch(()=>{if(active)setCustomerOptions([]);});return()=>{active=false;};},[]);
 
   async function createCampaign(event: React.FormEvent) {
     event.preventDefault(); setBusy('create'); setError(''); setNotice('');
-    try { await campaignsApi.create(form); setModal(false); setForm({name:'',description:'',purpose:'',ai_instructions:'',opening_script:'',language:'en-IN',voice_id:'Google.en-IN-Wavenet-D',calling_window_start:'09:00',calling_window_end:'18:00',calling_timezone:'Asia/Kolkata',max_calls_per_day:100,delay_between_calls:30}); setNotice('Campaign created in your workspace.'); await load(); }
+    try { const created:any = await campaignsApi.create(form); let assigned=0; if(selectedCustomers.length){const result=await api.post<any>('/customers/bulk',{customer_ids:selectedCustomers,action:'add_to_campaign',campaign_id:created.id});assigned=result.success||0;} setModal(false); setSelectedCustomers([]); setForm({name:'',description:'',purpose:'',ai_instructions:'',opening_script:'',language:'en-IN',voice_id:'Google.en-IN-Wavenet-D',calling_window_start:'09:00',calling_window_end:'18:00',calling_timezone:'Asia/Kolkata',max_calls_per_day:100,delay_between_calls:30}); setNotice('Campaign created. '+assigned+' customers assigned.'); await load(); }
     catch(e) { setError(e instanceof Error ? e.message : 'Campaign could not be created.'); }
     finally { setBusy(''); }
   }
@@ -72,6 +76,7 @@ export default function CampaignsPage() {
       <label className="space-y-1.5"><span className="text-xs font-semibold">Language</span><select value={form.language} onChange={e=>setForm({...form,language:e.target.value,voice_id:e.target.value==='hi-IN'?'Google.hi-IN-Wavenet-D':e.target.value==='en-US'?'Polly.Joanna':e.target.value==='en-GB'?'Polly.Amy':'Google.en-IN-Wavenet-D'})} className="h-10 w-full rounded-xl border border-base-300 bg-base-100 px-3 text-sm"><option value="en-IN">English (India)</option><option value="hi-IN">Hindi (India)</option><option value="hinglish">Hinglish (India)</option><option value="en-US">English (US)</option><option value="en-GB">English (UK)</option></select></label>
       <label className="space-y-1.5"><span className="text-xs font-semibold">Speaking voice</span><select value={form.voice_id} onChange={e=>setForm({...form,voice_id:e.target.value})} className="h-10 w-full rounded-xl border border-base-300 bg-base-100 px-3 text-sm">{(form.language==='hi-IN'?[['Google.hi-IN-Wavenet-D','Google Hindi · Female'],['Google.hi-IN-Wavenet-F','Google Hindi · Male'],['Polly.Aditi','Polly Aditi · Female'],['Polly.Kajal-Neural','Polly Kajal · Neural']]:form.language==='en-US'?[['Polly.Joanna','Polly Joanna · Female'],['Polly.Matthew','Polly Matthew · Male']]:form.language==='en-GB'?[['Polly.Amy','Polly Amy · Female'],['Polly.Brian','Polly Brian · Male']]:[['Google.en-IN-Wavenet-D','Google India · Female'],['Google.en-IN-Wavenet-B','Google India · Male'],['Polly.Aditi','Polly Aditi · Female'],['Polly.Kajal-Neural','Polly Kajal · Neural'],['Polly.Raveena','Polly Raveena · Female']]).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>
       <div className="sm:col-span-2"><p className="mb-2 text-xs font-semibold">Calling schedule</p><div className="grid gap-3 sm:grid-cols-2"><label className="space-y-1 text-xs">Start time<input type="time" required value={form.calling_window_start} onChange={e=>setForm({...form,calling_window_start:e.target.value})} className="mt-1 h-10 w-full rounded-xl border border-base-300 bg-base-100 px-3 text-sm"/></label><label className="space-y-1 text-xs">End time<input type="time" required value={form.calling_window_end} onChange={e=>setForm({...form,calling_window_end:e.target.value})} className="mt-1 h-10 w-full rounded-xl border border-base-300 bg-base-100 px-3 text-sm"/></label></div><label className="mt-2 block space-y-1 text-xs">Timezone<input value={form.calling_timezone} onChange={e=>setForm({...form,calling_timezone:e.target.value})} placeholder="Asia/Kolkata" className="mt-1 h-10 w-full rounded-xl border border-base-300 bg-base-100 px-3 text-sm"/></label><p className="mt-1 text-[11px] text-base-content/45">Calls are restricted to this local time window in the selected timezone.</p></div>
+      <div className="space-y-2 sm:col-span-2"><div className="flex items-center justify-between"><span className="text-xs font-semibold">Customers to call</span><span className="text-[11px] text-base-content/45">{selectedCustomers.length} selected</span></div><div className="max-h-48 overflow-y-auto rounded-xl border border-base-300 divide-y divide-base-300/70">{customerOptions.filter(x=>!x.do_not_call&&!['DO_NOT_CALL','OPTED_OUT'].includes(x.status)).map(customer=><label key={customer.id} className="flex cursor-pointer items-center gap-3 px-3 py-2.5 hover:bg-base-200/50"><input type="checkbox" checked={selectedCustomers.includes(customer.id)} onChange={e=>setSelectedCustomers(old=>e.target.checked?[...old,customer.id]:old.filter(id=>id!==customer.id))} className="checkbox checkbox-sm"/><span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold">{customer.first_name} {customer.last_name}</span><span className="block text-[11px] text-base-content/45">{customer.phone}</span></span></label>)}{customerOptions.length===0&&<p className="p-4 text-xs text-base-content/45">No customers are available yet. Add or import customers first.</p>}</div><p className="text-[11px] text-base-content/45">Only selected customers are queued when this campaign starts. Do-not-call and opted-out records are excluded.</p></div>
       <label className="space-y-1.5"><span className="text-xs font-semibold">Maximum calls per day</span><input type="number" min={1} max={10000} value={form.max_calls_per_day} onChange={e=>setForm({...form,max_calls_per_day:Number(e.target.value)})} className="h-10 w-full rounded-xl border border-base-300 bg-base-200/50 px-3 text-sm"/></label>
       <label className="space-y-1.5"><span className="text-xs font-semibold">Delay between calls (seconds)</span><input type="number" min={0} max={3600} value={form.delay_between_calls} onChange={e=>setForm({...form,delay_between_calls:Number(e.target.value)})} className="h-10 w-full rounded-xl border border-base-300 bg-base-200/50 px-3 text-sm"/></label>
       <div className="flex justify-end gap-2 pt-2 sm:col-span-2"><Button type="button" variant="outline" onClick={()=>setModal(false)}>Cancel</Button><Button type="submit" disabled={busy==='create'}>{busy==='create'?'Creating…':'Create campaign'}</Button></div>
