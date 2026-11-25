@@ -1,379 +1,114 @@
 'use client';
-
 import * as React from 'react';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import {
-  Users,
-  Phone,
-  CheckCircle,
-  XCircle,
-  Clock,
-  TrendingUp,
-  ArrowUpRight,
-  ArrowDownRight,
-  Target,
-  RefreshCw,
-  Plus,
-  Download,
-  Filter,
-  Calendar,
-} from 'lucide-react';
+import { Activity, Users, Phone, CheckCircle2, XCircle, Clock3, Target, Flame, RefreshCw, Plus, CalendarDays, Radio, AlertCircle } from 'lucide-react';
+import { ResponsiveContainer, CartesianGrid, XAxis, YAxis, Tooltip, Legend, AreaChart, Area, Line, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { cn, formatDuration, formatRelativeTime, getStatusColor } from '@/lib/utils';
 import { api, callsApi, campaignsApi } from '@/lib/api';
 
-const mockMetrics = [
-  { name: 'Total Customers', value: '1,234', change: '+12%', icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-100 dark:bg-blue-900/30' },
-  { name: 'Total Calls', value: '3,456', change: '+8%', icon: Phone, color: 'text-green-600', bgColor: 'bg-green-100 dark:bg-green-900/30' },
-  { name: 'Completed', value: '2,890', change: '+15%', icon: CheckCircle, color: 'text-emerald-600', bgColor: 'bg-emerald-100 dark:bg-emerald-900/30' },
-  { name: 'Failed', value: '234', change: '-5%', icon: XCircle, color: 'text-red-600', bgColor: 'bg-red-100 dark:bg-red-900/30' },
-  { name: 'Answered', value: '3,120', change: '+10%', icon: Phone, color: 'text-purple-600', bgColor: 'bg-purple-100 dark:bg-purple-900/30' },
-  { name: 'Interested', value: '445', change: '+22%', icon: Target, color: 'text-orange-600', bgColor: 'bg-orange-100 dark:bg-orange-900/30' },
-  { name: 'Hot Leads', value: '128', change: '+18%', icon: TrendingUp, color: 'text-red-600', bgColor: 'bg-red-100 dark:bg-red-900/30' },
-  { name: 'Callbacks', value: '67', change: '+3%', icon: Clock, color: 'text-indigo-600', bgColor: 'bg-indigo-100 dark:bg-indigo-900/30' },
-];
+type Row = Record<string, any>;
+type Day = { date: string; total_calls: number; completed_calls: number; failed_calls: number; hot_leads: number; warm_leads: number; cold_leads: number };
+const n = (v: unknown) => Number(v ?? 0);
+const fmt = (v: unknown) => n(v).toLocaleString('en-IN');
+const customerName = (c: Row) => c.customer?.name || [c.customer?.first_name, c.customer?.last_name].filter(Boolean).join(' ') || c.customer_name || 'Unknown customer';
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = React.useState<'overview' | 'campaigns' | 'recent'>('overview');
-  const [metrics, setMetrics] = React.useState(mockMetrics.map((item) => ({ ...item, value: '—', change: 'Selected period' })));
-  const [recentCalls, setRecentCalls] = React.useState<any[]>([]);
-  const [campaigns, setCampaigns] = React.useState<any[]>([]);
-  const [dataLoading, setDataLoading] = React.useState(true);
-  const [dataError, setDataError] = React.useState('');
-  const [selectedDays, setSelectedDays] = React.useState('30');
+  const [days, setDays] = React.useState('30');
   const [statusFilter, setStatusFilter] = React.useState('all');
   const [campaignFilter, setCampaignFilter] = React.useState('all');
+  const [analytics, setAnalytics] = React.useState<Row | null>(null);
+  const [calls, setCalls] = React.useState<Row[]>([]);
+  const [activeCalls, setActiveCalls] = React.useState<Row[]>([]);
+  const [campaigns, setCampaigns] = React.useState<Row[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [refreshing, setRefreshing] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const [updatedAt, setUpdatedAt] = React.useState<Date | null>(null);
+
+  const load = React.useCallback(async (quiet = false) => {
+    if (quiet) setRefreshing(true); else setLoading(true);
+    const dateFrom = new Date(Date.now() - Number(days) * 86400000).toISOString();
+    const dateTo = new Date().toISOString();
+    const results = await Promise.allSettled([
+      api.get<Row>('/analytics/organization', { period: 'daily', days: Number(days) }),
+      callsApi.list({ page: 1, pageSize: 100, campaignId: campaignFilter === 'all' ? undefined : campaignFilter, dateFrom, dateTo }),
+      callsApi.list({ page: 1, pageSize: 100, status: 'IN_PROGRESS', campaignId: campaignFilter === 'all' ? undefined : campaignFilter }),
+      campaignsApi.list({ page: 1, pageSize: 100 }),
+    ]);
+    const [a, c, live, cp] = results;
+    if (a.status === 'fulfilled') setAnalytics(a.value);
+    if (c.status === 'fulfilled') setCalls(Array.isArray(c.value?.data) ? c.value.data : []);
+    if (live.status === 'fulfilled') setActiveCalls(Array.isArray(live.value?.data) ? live.value.data : []);
+    if (cp.status === 'fulfilled') setCampaigns(Array.isArray(cp.value?.data) ? cp.value.data : []);
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    setError(failed === 4 ? 'The workspace API could not be reached. Check your connection and sign-in session.' : failed ? 'Some live data could not be loaded. Available API data is still shown.' : '');
+    if (!failed) setUpdatedAt(new Date());
+    setLoading(false); setRefreshing(false);
+  }, [days, campaignFilter]);
 
   React.useEffect(() => {
-    let mounted = true;
-    const loadDashboard = async () => {
-      const [analyticsResult, callsResult, campaignsResult] = await Promise.allSettled([
-        api.get<any>('/analytics/organization', { period: 'daily', days: Number(selectedDays) }),
-        callsApi.list({ page: 1, pageSize: 100, status: statusFilter === 'all' ? undefined : statusFilter, campaignId: campaignFilter === 'all' ? undefined : campaignFilter, dateFrom: new Date(Date.now() - Number(selectedDays) * 86400000).toISOString(), dateTo: new Date().toISOString() }),
-        campaignsApi.list({ page: 1, pageSize: 50 }),
-      ]);
-      if (!mounted) return;
-      const analyticsPayload: any = analyticsResult.status === 'fulfilled' ? analyticsResult.value : {};
-      const callsPayload: any = callsResult.status === 'fulfilled' ? callsResult.value : {};
-      const campaignPayload: any = campaignsResult.status === 'fulfilled' ? campaignsResult.value : {};
-      const callRows = Array.isArray(callsPayload?.data) ? callsPayload.data : [];
-      const campaignRows = Array.isArray(campaignPayload?.data) ? campaignPayload.data : [];
-      const summary = analyticsPayload?.summary || {};
-      const totalCustomers = Number(summary.total_customers || 0);
-      const totalCalls = Number(summary.total_calls || 0);
-      const completed = Number(summary.completed_calls || 0);
-      const failed = Number(summary.failed_calls || 0);
-      const answered = Number(summary.answered_calls || 0);
-      const interested = Number(summary.interested_customers || 0);
-      const hot = Number(summary.hot_leads || 0);
-      const callbackCount = Number(summary.callbacks_scheduled || 0);
-      const values = [totalCustomers, totalCalls, completed, failed, answered, interested, hot, callbackCount];
-      setMetrics(mockMetrics.map((item, index) => ({ ...item, value: values[index].toLocaleString('en-IN'), change: 'Live' })));
-      setRecentCalls(callRows.slice(0, 8).map((call: any) => ({
-        customer: call.customer?.name || call.customer_name || call.customerName || 'Unknown customer',
-        phone: call.to_number || call.phone || call.customer?.phone || '—',
-        campaign: call.campaign?.name || call.campaign_name || '—',
-        status: String(call.status || 'UNKNOWN').toUpperCase(),
-        duration: Number(call.duration_seconds || call.duration || 0),
-        interest: String(call.interest_level || call.interest || 'UNKNOWN').toUpperCase(),
-        time: call.created_at ? formatRelativeTime(call.created_at) : '—',
-      })));
-      setCampaigns(campaignRows.slice(0, 5).map((campaign: any) => ({
-        id: campaign.id,
-        name: campaign.name || 'Untitled campaign',
-        status: String(campaign.status || 'DRAFT').toUpperCase(),
-        customers: Number(campaign.total_customers ?? campaign.customer_count ?? 0),
-        completed: Number(campaign.completed_calls ?? campaign.completed ?? 0),
-        interested: Number(campaign.interested_count ?? campaign.interested ?? 0),
-        callbacks: Number(campaign.callback_count ?? campaign.callbacks ?? 0),
-      })));
-      const failures = [analyticsResult, callsResult, campaignsResult].filter(result => result.status === 'rejected').length;
-      setDataError(failures === 3 ? 'The API could not load dashboard data. Check your backend connection and sign-in.' : failures ? 'Some dashboard data could not be loaded; available sections are shown.' : '');
-      setDataLoading(false);
-    };
-    void loadDashboard();
-    const timer = window.setInterval(loadDashboard, 30000);
-    return () => { mounted = false; window.clearInterval(timer); };
-  }, [selectedDays, statusFilter, campaignFilter]);
+    void load();
+    const timer = window.setInterval(() => void load(true), 15000);
+    return () => window.clearInterval(timer);
+  }, [load]);
 
-  return (
-    <DashboardLayout>
-      <div className="mx-auto w-full max-w-[1600px] space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-            <p className="text-muted-foreground">Overview of your AI voice calling campaigns</p>
-            <p className="mt-1 text-xs text-muted-foreground">{dataLoading ? "Connecting to workspace…" : "Refreshes automatically every 30 seconds"}{dataError ? ` · ${dataError}` : ""}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 rounded-md border bg-background px-3 text-sm">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span className="sr-only">Reporting period</span>
-              <select aria-label="Reporting period" className="h-9 bg-transparent outline-none" value={selectedDays} onChange={(event) => setSelectedDays(event.target.value)}>
-                <option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last 12 months</option>
-              </select>
-            </label>
-            <label className="rounded-md border bg-background px-3 text-sm">
-              <span className="sr-only">Call status filter</span>
-              <select aria-label="Call status" className="h-9 bg-transparent outline-none" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-                <option value="all">All statuses</option><option value="COMPLETED">Completed</option><option value="FAILED">Failed</option><option value="NO_ANSWER">No answer</option><option value="BUSY">Busy</option><option value="IN_PROGRESS">In progress</option>
-              </select>
-            </label>
-            <label className="rounded-md border bg-background px-3 text-sm">
-              <span className="sr-only">Campaign filter</span>
-              <select aria-label="Campaign" className="h-9 max-w-[150px] bg-transparent outline-none" value={campaignFilter} onChange={(event) => setCampaignFilter(event.target.value)}>
-                <option value="all">All campaigns</option>{campaigns.map((campaign: any) => <option key={campaign.id} value={campaign.id}>{campaign.name}</option>)}
-              </select>
-            </label>
-            <Button size="sm" onClick={() => window.location.assign('/dashboard/campaigns')}>
-              <Plus className="mr-2 h-4 w-4" />
-              New Campaign
-            </Button>
-          </div>
-        </div>
+  const summary = analytics?.summary ?? {};
+  const trend: Day[] = Array.isArray(analytics?.data) ? analytics.data : [];
+  const recent = calls.filter((c) => statusFilter === 'all' || String(c.status || '').toUpperCase() === statusFilter).slice(0, 10);
+  const kpis = [
+    { label: 'Total customers', value: summary.total_customers, note: 'All workspace records', icon: Users, color: 'text-blue-600 bg-blue-500/10' },
+    { label: 'Total calls', value: summary.total_calls, note: 'All-time calls', icon: Phone, color: 'text-indigo-600 bg-indigo-500/10' },
+    { label: 'Completed calls', value: summary.completed_calls, note: `${n(summary.call_success_rate).toFixed(1)}% completion rate`, icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-500/10' },
+    { label: 'Failed calls', value: summary.failed_calls, note: 'Failed / unanswered outcomes', icon: XCircle, color: 'text-rose-600 bg-rose-500/10' },
+    { label: 'Answered calls', value: summary.answered_calls, note: `${n(summary.answer_rate).toFixed(1)}% answer rate`, icon: Phone, color: 'text-cyan-600 bg-cyan-500/10' },
+    { label: 'Interested leads', value: summary.interested_customers, note: `${n(summary.conversion_rate).toFixed(1)}% conversion rate`, icon: Target, color: 'text-amber-600 bg-amber-500/10' },
+    { label: 'Hot leads', value: summary.hot_leads, note: 'Customers marked hot', icon: Flame, color: 'text-orange-600 bg-orange-500/10' },
+    { label: 'Scheduled callbacks', value: summary.callbacks_scheduled, note: 'Awaiting follow-up', icon: Clock3, color: 'text-violet-600 bg-violet-500/10' },
+  ];
+  const total = trend.reduce((s, d) => s + n(d.total_calls), 0);
+  const completed = trend.reduce((s, d) => s + n(d.completed_calls), 0);
+  const failed = trend.reduce((s, d) => s + n(d.failed_calls), 0);
+  const outcomes = [{ name: 'Completed', value: completed }, { name: 'Failed', value: failed }, { name: 'Other', value: Math.max(0, total - completed - failed) }].filter((x) => x.value > 0);
+  const leads = [
+    { name: 'Hot', leads: trend.reduce((s, d) => s + n(d.hot_leads), 0) },
+    { name: 'Warm', leads: trend.reduce((s, d) => s + n(d.warm_leads), 0) },
+    { name: 'Cold', leads: trend.reduce((s, d) => s + n(d.cold_leads), 0) },
+  ];
 
-        {/* Metrics Grid */}
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {metrics.map((metric) => (
-            <Card key={metric.name} className="relative overflow-hidden">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">{metric.name}</p>
-                    <p className="text-3xl font-bold mt-1">{metric.value}</p>
-                    <div className="flex items-center gap-1 mt-2">
-                      <span className={cn('text-sm font-medium', metric.change === 'Live' || metric.change.startsWith('+') ? 'text-green-600' : 'text-red-600')}>
-                        {metric.change}
-                      </span>
-                      <span className="text-sm text-muted-foreground">selected period</span>
-                    </div>
-                  </div>
-                  <div className={cn('p-3 rounded-xl', metric.bgColor)}>
-                    <metric.icon className={cn('h-6 w-6', metric.color)} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Tabs for different views */}
-        <div className="space-y-4">
-          <div className="flex gap-2 border-b">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={cn(
-                'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
-                activeTab === 'overview'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              )}
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveTab('campaigns')}
-              className={cn(
-                'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
-                activeTab === 'campaigns'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              )}
-            >
-              Campaigns
-            </button>
-            <button
-              onClick={() => setActiveTab('recent')}
-              className={cn(
-                'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
-                activeTab === 'recent'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              )}
-            >
-              Recent Calls
-            </button>
-          </div>
-
-          {activeTab === 'overview' && (
-            <div className="grid gap-4 lg:grid-cols-2">
-              {/* Campaign Performance */}
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Campaign Performance</CardTitle>
-                  <Badge variant="success">Live</Badge>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {campaigns.map((campaign) => (
-                      <div key={campaign.name} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">{campaign.name}</span>
-                          <Badge variant={campaign.status === 'RUNNING' ? 'success' : campaign.status === 'PAUSED' ? 'warning' : campaign.status === 'COMPLETED' ? 'default' : 'outline'}>
-                            {campaign.status}
-                          </Badge>
-                        </div>
-                        <div className="grid grid-cols-4 gap-4 text-sm">
-                          <div>
-                            <p className="text-muted-foreground">Customers</p>
-                            <p className="font-medium">{campaign.customers}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Completed</p>
-                            <p className="font-medium text-green-600">{campaign.completed}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Interested</p>
-                            <p className="font-medium text-orange-600">{campaign.interested}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Callbacks</p>
-                            <p className="font-medium text-indigo-600">{campaign.callbacks}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Call Status Distribution */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Call Status Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {[
-                      { label: 'Completed', value: 2890, color: 'bg-green-500', percentage: 83.6 },
-                      { label: 'No Answer', value: 345, color: 'bg-gray-500', percentage: 10.0 },
-                      { label: 'Busy', value: 123, color: 'bg-orange-500', percentage: 3.6 },
-                      { label: 'Voicemail', value: 56, color: 'bg-purple-500', percentage: 1.6 },
-                      { label: 'Failed', value: 42, color: 'bg-red-500', percentage: 1.2 },
-                    ].map((item) => (
-                      <div key={item.label} className="space-y-1">
-                        <div className="flex justify-between text-sm">
-                          <span>{item.label}</span>
-                          <span className="font-medium">{item.value} ({item.percentage}%)</span>
-                        </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className={cn('h-full rounded-full transition-all duration-500', item.color)}
-                            style={{ width: `${item.percentage}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {activeTab === 'campaigns' && (
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Campaign</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Customers</TableHead>
-                      <TableHead className="text-right">Completed</TableHead>
-                      <TableHead className="text-right">Interested</TableHead>
-                      <TableHead className="text-right">Callbacks</TableHead>
-                      <TableHead className="text-right">Success Rate</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {campaigns.map((campaign) => (
-                      <TableRow key={campaign.name}>
-                        <TableCell className="font-medium">{campaign.name}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              campaign.status === 'RUNNING' ? 'success' :
-                              campaign.status === 'PAUSED' ? 'warning' :
-                              campaign.status === 'COMPLETED' ? 'default' : 'outline'
-                            }
-                          >
-                            {campaign.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">{campaign.customers}</TableCell>
-                        <TableCell className="text-right text-green-600">{campaign.completed}</TableCell>
-                        <TableCell className="text-right text-orange-600">{campaign.interested}</TableCell>
-                        <TableCell className="text-right text-indigo-600">{campaign.callbacks}</TableCell>
-                        <TableCell className="text-right font-medium">
-                          {campaign.customers > 0 ? ((campaign.completed / campaign.customers) * 100).toFixed(1) : 0}%
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <RefreshCw className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
-
-          {activeTab === 'recent' && (
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Campaign</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Duration</TableHead>
-                      <TableHead>Interest</TableHead>
-                      <TableHead>Time</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {recentCalls.map((call) => (
-                      <TableRow key={`${call.customer}-${call.time}`}>
-                        <TableCell className="font-medium">{call.customer}</TableCell>
-                        <TableCell>{call.phone}</TableCell>
-                        <TableCell>{call.campaign}</TableCell>
-                        <TableCell>
-                          <Badge variant={getStatusColor(call.status).includes('green') ? 'success' : getStatusColor(call.status).includes('red') ? 'destructive' : getStatusColor(call.status).includes('yellow') ? 'warning' : getStatusColor(call.status).includes('purple') ? 'default' : 'outline'}>
-                            {call.status.replace('_', ' ')}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {call.duration > 0 ? formatDuration(call.duration) : '-'}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={call.interest === 'HOT' ? 'destructive' : call.interest === 'WARM' ? 'warning' : call.interest === 'COLD' ? 'info' : 'outline'}>
-                            {call.interest}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{call.time}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+  return <DashboardLayout><div className="mx-auto w-full max-w-[1600px] space-y-6">
+    <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+      <div><div className="flex flex-wrap items-center gap-2"><h1 className="text-3xl font-bold tracking-tight">Analytics dashboard</h1><Badge variant={!loading && !error ? 'success' : 'outline'}>{loading ? 'Connecting' : error ? 'Data issue' : 'API connected'}</Badge></div><p className="mt-1 text-muted-foreground">Live workspace performance, calling activity, and lead outcomes.</p><p className="mt-1 text-xs text-muted-foreground">{updatedAt ? `Last updated ${updatedAt.toLocaleTimeString()}` : 'Waiting for API data'} · Auto-refresh every 15 seconds</p></div>
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="flex h-10 items-center gap-2 rounded-md border bg-background px-3 text-sm"><CalendarDays className="h-4 w-4 text-muted-foreground" /><span className="sr-only">Reporting period</span><select aria-label="Reporting period" className="bg-transparent outline-none" value={days} onChange={(e) => setDays(e.target.value)}><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last 12 months</option></select></label>
+        <label className="flex h-10 items-center rounded-md border bg-background px-3 text-sm"><span className="sr-only">Call status</span><select aria-label="Call status filter" className="max-w-[145px] bg-transparent outline-none" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}><option value="all">All statuses</option><option value="COMPLETED">Completed</option><option value="FAILED">Failed</option><option value="NO_ANSWER">No answer</option><option value="BUSY">Busy</option><option value="IN_PROGRESS">In progress</option></select></label>
+        <label className="flex h-10 items-center rounded-md border bg-background px-3 text-sm"><span className="sr-only">Campaign</span><select aria-label="Campaign filter" className="max-w-[170px] bg-transparent outline-none" value={campaignFilter} onChange={(e) => setCampaignFilter(e.target.value)}><option value="all">All campaigns</option>{campaigns.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+        <Button variant="outline" size="sm" onClick={() => void load(true)} disabled={refreshing}><RefreshCw className={cn('mr-2 h-4 w-4', refreshing && 'animate-spin')} />Refresh</Button>
+        <Button size="sm" onClick={() => window.location.assign('/dashboard/campaigns')}><Plus className="mr-2 h-4 w-4" />New campaign</Button>
       </div>
-    </DashboardLayout>
-  );
+    </header>
+    {error && <div role="alert" className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"><AlertCircle className="h-4 w-4 shrink-0" />{error}</div>}
+
+    <section aria-label="Workspace KPI metrics" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {kpis.map((item) => { const Icon = item.icon; return <Card key={item.label}><CardContent className="flex items-start justify-between gap-3 p-5"><div className="min-w-0"><p className="text-sm text-muted-foreground">{item.label}</p><p className="mt-2 text-3xl font-bold tabular-nums">{loading && !analytics ? '—' : fmt(item.value)}</p><p className="mt-1 text-xs text-muted-foreground">{item.note}</p></div><div className={cn('rounded-xl p-3', item.color)}><Icon className="h-5 w-5" /></div></CardContent></Card>; })}
+    </section>
+
+    <section className="grid gap-4 xl:grid-cols-3">
+      <Card className="xl:col-span-2"><CardHeader className="flex flex-row items-center justify-between space-y-0"><div><CardTitle>Calling activity</CardTitle><p className="mt-1 text-sm text-muted-foreground">Daily call volume and outcomes · selected period</p></div><Badge variant="outline">{fmt(total)} calls</Badge></CardHeader><CardContent className="h-[320px]">{trend.length ? <ResponsiveContainer width="100%" height="100%"><AreaChart data={trend} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}><defs><linearGradient id="callsFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6366f1" stopOpacity={0.28} /><stop offset="100%" stopColor="#6366f1" stopOpacity={0.02} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="date" tickFormatter={(v) => new Date(v).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} minTickGap={24} /><YAxis allowDecimals={false} /><Tooltip labelFormatter={(v) => new Date(String(v)).toLocaleDateString('en-IN')} /><Legend /><Area type="monotone" dataKey="total_calls" name="Total calls" stroke="#6366f1" fill="url(#callsFill)" strokeWidth={2} /><Line type="monotone" dataKey="completed_calls" name="Completed" stroke="#16a34a" strokeWidth={2} dot={false} /><Line type="monotone" dataKey="failed_calls" name="Failed" stroke="#ef4444" strokeWidth={2} dot={false} /></AreaChart></ResponsiveContainer> : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">{loading ? 'Loading database analytics…' : 'No call activity recorded for this period.'}</div>}</CardContent></Card>
+      <Card><CardHeader><CardTitle>Call outcome mix</CardTitle><p className="text-sm text-muted-foreground">Actual analytics records in this period</p></CardHeader><CardContent className="h-[320px]">{outcomes.length ? <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={outcomes} dataKey="value" nameKey="name" innerRadius={68} outerRadius={104} paddingAngle={3}>{outcomes.map((x, i) => <Cell key={x.name} fill={['#16a34a', '#ef4444', '#64748b'][i]} />)}</Pie><Tooltip formatter={(v) => fmt(v)} /><Legend /></PieChart></ResponsiveContainer> : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">{loading ? 'Loading outcomes…' : 'No call outcomes to display yet.'}</div>}</CardContent></Card>
+    </section>
+
+    <section className="grid gap-4 xl:grid-cols-3">
+      <Card className="xl:col-span-2"><CardHeader><CardTitle>Lead quality</CardTitle><p className="text-sm text-muted-foreground">Hot, warm, and cold leads from call analytics</p></CardHeader><CardContent className="h-[280px]">{leads.some((x) => x.leads > 0) ? <ResponsiveContainer width="100%" height="100%"><BarChart data={leads} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" /><YAxis allowDecimals={false} /><Tooltip formatter={(v) => fmt(v)} /><Bar dataKey="leads" name="Leads" fill="#f59e0b" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer> : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">{loading ? 'Loading lead analytics…' : 'No lead outcomes recorded in this period.'}</div>}</CardContent></Card>
+      <Card><CardHeader className="flex flex-row items-center justify-between space-y-0"><div><CardTitle>Live agent activity</CardTitle><p className="mt-1 text-sm text-muted-foreground">Calls currently marked in progress by the API</p></div><Radio className="h-5 w-5 text-emerald-600" /></CardHeader><CardContent><div className="flex items-end gap-2"><span className="text-4xl font-bold tabular-nums">{loading && !updatedAt ? '—' : activeCalls.length}</span><span className="pb-1 text-sm text-muted-foreground">active calls</span></div><div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"><span className={cn('h-2 w-2 rounded-full', error ? 'bg-amber-500' : 'animate-pulse bg-emerald-500')} />{error ? 'Live status may be delayed' : 'Live status from calls API'}</div><div className="mt-5 space-y-3">{activeCalls.slice(0, 4).map((c) => <div key={c.id} className="flex items-center justify-between gap-3 border-t pt-3 text-sm"><div className="min-w-0"><p className="truncate font-medium">{customerName(c)}</p><p className="truncate text-xs text-muted-foreground">{c.to_number || c.phone || 'Number unavailable'}</p></div><Badge variant="outline">In progress</Badge></div>)}{!loading && activeCalls.length === 0 && <p className="border-t pt-3 text-sm text-muted-foreground">No calls are currently marked in progress.</p>}</div></CardContent></Card>
+    </section>
+
+    <Card><CardHeader className="flex flex-row items-center justify-between"><div><CardTitle>Campaign performance</CardTitle><p className="mt-1 text-sm text-muted-foreground">Campaign records returned by your workspace API</p></div><Button variant="outline" size="sm" onClick={() => window.location.assign('/dashboard/campaigns')}>View campaigns</Button></CardHeader><CardContent className="p-0">{campaigns.length ? <div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Campaign</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Customers</TableHead><TableHead className="text-right">Completed</TableHead><TableHead className="text-right">Interested</TableHead><TableHead className="text-right">Completion</TableHead></TableRow></TableHeader><TableBody>{campaigns.slice(0, 8).map((c) => { const customers = n(c.total_customers ?? c.customer_count); const done = n(c.completed_calls ?? c.completed); const status = String(c.status || 'UNKNOWN').toUpperCase(); return <TableRow key={c.id}><TableCell className="font-medium">{c.name || 'Untitled campaign'}</TableCell><TableCell><Badge variant={status === 'RUNNING' ? 'success' : status === 'PAUSED' ? 'warning' : status === 'COMPLETED' ? 'default' : 'outline'}>{status}</Badge></TableCell><TableCell className="text-right tabular-nums">{fmt(customers)}</TableCell><TableCell className="text-right tabular-nums">{fmt(done)}</TableCell><TableCell className="text-right tabular-nums">{fmt(c.interested_count ?? c.interested)}</TableCell><TableCell className="text-right tabular-nums">{customers ? `${(done / customers * 100).toFixed(1)}%` : '0.0%'}</TableCell></TableRow>; })}</TableBody></Table></div> : <div className="px-6 py-12 text-center text-sm text-muted-foreground">{loading ? 'Loading campaigns…' : 'No campaigns have been created in this workspace yet.'}</div>}</CardContent></Card>
+
+    <Card><CardHeader className="flex flex-row items-center justify-between"><div><CardTitle>Recent calls</CardTitle><p className="mt-1 text-sm text-muted-foreground">Latest call records from the selected period</p></div><Badge variant="outline">{recent.length} shown</Badge></CardHeader><CardContent className="p-0">{recent.length ? <div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Customer</TableHead><TableHead>Phone</TableHead><TableHead>Campaign</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Duration</TableHead><TableHead>Interest</TableHead><TableHead>Time</TableHead></TableRow></TableHeader><TableBody>{recent.map((c) => { const status = String(c.status || 'UNKNOWN').toUpperCase(); return <TableRow key={c.id}><TableCell className="font-medium">{customerName(c)}</TableCell><TableCell>{c.to_number || c.customer?.phone || '—'}</TableCell><TableCell>{c.campaign?.name || c.campaign_name || '—'}</TableCell><TableCell><Badge variant={getStatusColor(status).includes('green') ? 'success' : getStatusColor(status).includes('red') ? 'destructive' : 'outline'}>{status.replaceAll('_', ' ')}</Badge></TableCell><TableCell className="text-right font-mono">{n(c.duration) > 0 ? formatDuration(n(c.duration)) : '—'}</TableCell><TableCell>{String(c.interest_level || '—').toUpperCase()}</TableCell><TableCell>{c.created_at ? formatRelativeTime(c.created_at) : '—'}</TableCell></TableRow>; })}</TableBody></Table></div> : <div className="px-6 py-12 text-center text-sm text-muted-foreground">{loading ? 'Loading calls…' : 'No calls match the selected filters.'}</div>}</CardContent></Card>
+    <p className="flex items-center gap-2 text-xs text-muted-foreground"><Activity className="h-3.5 w-3.5" />Metrics and charts use workspace API responses. This page does not generate sample or mock records.</p>
+  </div></DashboardLayout>;
 }
