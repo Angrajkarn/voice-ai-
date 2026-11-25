@@ -6,7 +6,7 @@ import json
 from sqlalchemy import and_, or_, select
 from app.core.crypto import decrypt_secret
 from app.models.campaign import Campaign
-from app.models.enums import IntegrationType
+from app.models.enums import CustomerStatus, IntegrationType
 from app.models.integration import Integration
 
 from app.db.session import get_db
@@ -71,13 +71,8 @@ async def twilio_voice_webhook(
 
     response = VoiceResponse()
 
-    # Get AI agent configuration
     campaign = call.campaign
     ai_service = AIAgentService()
-    await ai_service.get_realtime_session_config(campaign, call.customer)
-
-    # For now, use a simple TwiML flow
-    # In production, this would connect to OpenAI Realtime API via Media Streams
 
     language = "en-IN" if campaign.language == "hinglish" else campaign.language
     voice = campaign.voice_id or "Google.en-IN-Wavenet-D"
@@ -124,32 +119,35 @@ async def twilio_gather_webhook(
     if not twilio.validate_webhook_signature(str(request.url), data, request.headers.get("X-Twilio-Signature", "")):
         raise HTTPException(status_code=403, detail="Invalid Twilio signature")
 
-    # In production, this would send to OpenAI Realtime API
-    # For now, return a simple response
-
     from twilio.twiml.voice_response import Gather, VoiceResponse
 
     response = VoiceResponse()
-
-    # Simple response logic, spoken with the selected campaign voice.
     language = "en-IN" if call.campaign.language == "hinglish" else call.campaign.language
     voice = call.campaign.voice_id or "Google.en-IN-Wavenet-D"
-    if "interested" in speech_result.lower() or "yes" in speech_result.lower():
-        response.say("Great! Let me tell you more about our offering.", voice=voice, language=language)
-    elif "not interested" in speech_result.lower() or "no" in speech_result.lower():
-        response.say("I understand. Thank you for your time. Have a great day!", voice=voice, language=language)
+    normalized = speech_result.lower()
+    opt_out_phrases = ("stop calling", "do not call", "don't call", "remove me", "unsubscribe", "stop")
+    if any(phrase in normalized for phrase in opt_out_phrases):
+        call.customer.do_not_call = True
+        call.customer.status = CustomerStatus.OPTED_OUT
+        call.customer.opt_out_at = datetime.utcnow() if hasattr(call.customer, "opt_out_at") else None
+        await db.commit()
+        response.say("I understand. We will not call you again. Goodbye.", voice=voice, language=language)
         response.hangup()
-    elif "callback" in speech_result.lower() or "call back" in speech_result.lower():
-        response.say("Sure, I can schedule a callback for you. What time works best?", voice=voice, language=language)
-    else:
-        response.say("I see. Could you tell me more about what you're looking for?", voice=voice, language=language)
+        return Response(content=str(response), media_type="application/xml")
 
-    # Continue gathering
+    ai_service = AIAgentService()
+    history = call.transcript_text or ""
+    reply = await ai_service.generate_response(call.campaign, call.customer, speech_result, history)
+    call.transcript_text = (history + f"\\nCustomer: {speech_result}\\nAgent: {reply}").strip()
+    await db.commit()
+    response.say(reply, voice=voice, language=language)
+
     gather = Gather(
         input="speech",
         action=f"/webhooks/twilio/gather?campaign_id={campaign_id}&call_id={call_id}",
         method="POST",
         language=language,
+        speech_timeout="auto",
     )
     response.append(gather)
 
