@@ -47,7 +47,7 @@ class TwilioService:
                 from_=from_number,
                 url=f"{base_url}/webhooks/twilio/voice?campaign_id={campaign_id}&call_id={call_id}",
                 status_callback=f"{base_url}/webhooks/twilio/status?campaign_id={campaign_id}&call_id={call_id}",
-                status_callback_event=["initiated", "ringing", "answered", "completed", "busy", "failed", "no-answer", "canceled"],
+                status_callback_event=["initiated", "ringing", "answered", "completed"],
                 status_callback_method="POST",
                 record=True,
                 recording_channels="mono",
