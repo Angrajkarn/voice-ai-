@@ -7,6 +7,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+    func,
     ForeignKey,
     Index,
     Integer,
@@ -30,7 +31,7 @@ class Call(BaseModel):
     to_number = Column(String(20), nullable=False, index=True)
 
     # Timing
-    queued_at = Column(DateTime(timezone=True), nullable=False)
+    queued_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     initiated_at = Column(DateTime(timezone=True), nullable=True)
     answered_at = Column(DateTime(timezone=True), nullable=True)
     ended_at = Column(DateTime(timezone=True), nullable=True)
