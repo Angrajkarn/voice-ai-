@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     const [campaigns, total] = await Promise.all([
       prisma.campaign.findMany({
         where,
-        orderBy: { [validatedParams.sortBy]: validatedParams.sortOrder },
+        orderBy: { [validatedParams.sortBy || 'createdAt']: validatedParams.sortOrder },
         skip: (validatedParams.page - 1) * validatedParams.pageSize,
         take: validatedParams.pageSize,
         include: {
