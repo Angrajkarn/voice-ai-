@@ -38,7 +38,8 @@ class CampaignBase(BaseModel):
     @classmethod
     def validate_twilio_voice(cls, value: str) -> str:
         allowed = {*(f"Google.en-IN-Wavenet-{x}" for x in "ABCDEF"), *(f"Google.hi-IN-Wavenet-{x}" for x in "ABCDEF"), "Polly.Aditi", "Polly.Kajal-Neural", "Polly.Raveena", "Polly.Joanna", "Polly.Matthew", "Polly.Amy", "Polly.Brian"}
-        if value not in allowed: raise ValueError("Choose a supported Twilio voice from the voice selector.")
+        if value not in allowed:
+            raise ValueError("Choose a supported Twilio voice from the voice selector.")
         return value
     @field_validator('calling_window_end')
     @classmethod
@@ -89,9 +90,11 @@ class CampaignUpdate(BaseModel):
     @field_validator("voice_id")
     @classmethod
     def validate_update_twilio_voice(cls, value: str | None) -> str | None:
-        if value is None: return value
+        if value is None:
+            return value
         allowed = {*(f"Google.en-IN-Wavenet-{x}" for x in "ABCDEF"), *(f"Google.hi-IN-Wavenet-{x}" for x in "ABCDEF"), "Polly.Aditi", "Polly.Kajal-Neural", "Polly.Raveena", "Polly.Joanna", "Polly.Matthew", "Polly.Amy", "Polly.Brian"}
-        if value not in allowed: raise ValueError("Choose a supported Twilio voice from the voice selector.")
+        if value not in allowed:
+            raise ValueError("Choose a supported Twilio voice from the voice selector.")
         return value
 
 
