@@ -4,7 +4,12 @@ import uuid
 
 from sqlalchemy import Column, DateTime, func
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import declarative_mixin, declared_attr
+from sqlalchemy.orm import declarative_base, declarative_mixin, declared_attr
+
+
+# All ORM models must share this metadata so migrations and test databases
+# create the same tables.
+Base = declarative_base()
 
 
 @declarative_mixin
@@ -24,5 +29,7 @@ class UUIDMixin:
         return Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False)
 
 
-class BaseModel(TimestampMixin, UUIDMixin):
-    """Base model combining UUID and Timestamp mixins"""
+class BaseModel(Base, TimestampMixin, UUIDMixin):
+    """Abstract base for all application ORM models"""
+
+    __abstract__ = True
