@@ -41,24 +41,6 @@ const mockMetrics = [
   { name: 'Callbacks', value: '67', change: '+3%', icon: Clock, color: 'text-indigo-600', bgColor: 'bg-indigo-100 dark:bg-indigo-900/30' },
 ];
 
-const mockRecentCalls = [
-  { customer: 'Rahul Sharma', phone: '+91 98765 43210', campaign: 'Product Launch', status: 'COMPLETED', duration: 145, interest: 'HOT', time: '2 min ago' },
-  { customer: 'Priya Patel', phone: '+91 98765 43211', campaign: 'Product Launch', status: 'COMPLETED', duration: 89, interest: 'WARM', time: '5 min ago' },
-  { customer: 'Amit Kumar', phone: '+91 98765 43212', campaign: 'Product Launch', status: 'NO_ANSWER', duration: 0, interest: 'UNKNOWN', time: '12 min ago' },
-  { customer: 'Sneha Reddy', phone: '+91 98765 43213', campaign: 'Product Launch', status: 'COMPLETED', duration: 203, interest: 'HOT', time: '18 min ago' },
-  { customer: 'Vikram Singh', phone: '+91 98765 43214', campaign: 'Product Launch', status: 'BUSY', duration: 0, interest: 'UNKNOWN', time: '25 min ago' },
-  { customer: 'Anjali Gupta', phone: '+91 98765 43215', campaign: 'Q4 Promotions', status: 'COMPLETED', duration: 167, interest: 'COLD', time: '32 min ago' },
-  { customer: 'Rohit Verma', phone: '+91 98765 43216', campaign: 'Q4 Promotions', status: 'VOICEMAIL', duration: 45, interest: 'UNKNOWN', time: '41 min ago' },
-  { customer: 'Kavya Nair', phone: '+91 98765 43217', campaign: 'Q4 Promotions', status: 'FAILED', duration: 0, interest: 'UNKNOWN', time: '50 min ago' },
-];
-
-const mockCampaigns = [
-  { name: 'Product Launch Campaign', status: 'RUNNING', customers: 450, completed: 320, interested: 89, callbacks: 23 },
-  { name: 'Q4 Promotions', status: 'PAUSED', customers: 320, completed: 180, interested: 45, callbacks: 12 },
-  { name: 'Renewal Reminders', status: 'COMPLETED', customers: 200, completed: 195, interested: 67, callbacks: 8 },
-  { name: 'New Feature Announcement', status: 'DRAFT', customers: 150, completed: 0, interested: 0, callbacks: 0 },
-];
-
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = React.useState<'overview' | 'campaigns' | 'recent'>('overview');
   const [metrics, setMetrics] = React.useState(mockMetrics.map((item) => ({ ...item, value: '—', change: 'Live' })));
@@ -153,7 +135,7 @@ export default function DashboardPage() {
                     <p className="text-sm font-medium text-muted-foreground">{metric.name}</p>
                     <p className="text-3xl font-bold mt-1">{metric.value}</p>
                     <div className="flex items-center gap-1 mt-2">
-                      <span className={cn('text-sm font-medium', metric.change.startsWith('+') ? 'text-green-600' : 'text-red-600')}>
+                      <span className={cn('text-sm font-medium', metric.change === 'Live' || metric.change.startsWith('+') ? 'text-green-600' : 'text-red-600')}>
                         {metric.change}
                       </span>
                       <span className="text-sm text-muted-foreground">vs last period</span>
@@ -298,7 +280,7 @@ export default function DashboardPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockCampaigns.map((campaign) => (
+                    {campaigns.map((campaign) => (
                       <TableRow key={campaign.name}>
                         <TableCell className="font-medium">{campaign.name}</TableCell>
                         <TableCell>
