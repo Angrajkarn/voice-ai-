@@ -78,7 +78,7 @@ class Call(BaseModel):
     agent = relationship("User", foreign_keys=[agent_id], back_populates="assigned_calls")
     transcript = relationship("CallTranscript", back_populates="call", uselist=False)
     recording = relationship("CallRecording", back_populates="call", uselist=False)
-    callbacks = relationship("Callback", back_populates="source_call")
+    callbacks = relationship("Callback", back_populates="source_call", foreign_keys="Callback.source_call_id")
 
     # Indexes
     __table_args__ = (
