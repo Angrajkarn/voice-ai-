@@ -82,6 +82,5 @@ class Call(BaseModel):
         Index('ix_calls_campaign_status', 'campaign_id', 'status'),
         Index('ix_calls_customer_status', 'customer_id', 'status'),
         Index('ix_calls_campaign_created', 'campaign_id', 'created_at'),
-        Index('ix_calls_to_number', 'to_number'),
         Index('ix_calls_sheets_sync', 'sheets_sync_status'),
     )
