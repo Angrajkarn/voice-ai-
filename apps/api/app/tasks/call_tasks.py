@@ -16,7 +16,6 @@ from app.models.call import Call
 from app.models.campaign_customer import CampaignCustomer
 from app.models.enums import CallStatus, CampaignStatus
 from app.services.call_service import CallService
-from app.services.campaign_service import CampaignService
 
 
 # Create async engine for tasks
@@ -34,10 +33,8 @@ def process_campaign_calls(self, campaign_id: str):
     """Process queued calls for a campaign"""
     async def _process():
         async with AsyncSessionLocal() as db:
-            campaign_service = CampaignService(db)
             call_service = CallService(db)
-
-            campaign = await campaign_service.get_by_id(UUID(campaign_id), None)
+            campaign = await db.get(Campaign, UUID(campaign_id))
             if not campaign or campaign.status != CampaignStatus.RUNNING:
                 return {"status": "skipped", "reason": "Campaign not running"}
 
@@ -48,14 +45,11 @@ def process_campaign_calls(self, campaign_id: str):
             # Check daily call limit
             today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
             calls_today = await db.scalar(
-                select(Call).where(
-                    and_(
-                        Call.campaign_id == UUID(campaign_id),
-                        Call.initiated_at >= today_start,
-                    )
+                select(func.count(Call.id)).where(
+                    and_(Call.campaign_id == UUID(campaign_id), Call.initiated_at >= today_start)
                 )
-            )
-            if calls_today and len(calls_today) >= campaign.max_calls_per_day:
+            ) or 0
+            if calls_today >= campaign.max_calls_per_day:
                 return {"status": "skipped", "reason": "Daily call limit reached"}
 
             # Get next queued call
@@ -122,7 +116,7 @@ def process_call_queue():
             today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
             for campaign in campaigns.scalars().all():
                 if not call_service._is_within_calling_window(campaign): continue
-                calls_today = await db.scalar(select(func.count(Call.id)).where(and_(Call.campaign_id == campaign.id, Call.created_at >= today_start))) or 0
+                calls_today = await db.scalar(select(func.count(Call.id)).where(and_(Call.campaign_id == campaign.id, Call.initiated_at >= today_start))) or 0
                 if calls_today >= campaign.max_calls_per_day: continue
                 last_initiated = await db.scalar(select(func.max(Call.initiated_at)).where(and_(Call.campaign_id == campaign.id, Call.initiated_at.is_not(None))))
                 if last_initiated and (now - last_initiated.replace(tzinfo=None)).total_seconds() < campaign.delay_between_calls: continue
