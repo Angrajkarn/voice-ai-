@@ -2,7 +2,7 @@
 
 from app.models.base import BaseModel
 from app.models.enums import SyncStatus
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import BigInteger, Column, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -17,8 +17,8 @@ class CallRecording(BaseModel):
     provider = Column(String(50), default="twilio", nullable=False)
     provider_id = Column(String(100), nullable=False)
     format = Column(String(20), default="mp3", nullable=False)
-    duration = Column(Integer, nullable=False)  # seconds
-    size_bytes = Column(Integer, nullable=False)
+    duration = Column(Float, nullable=False)  # seconds
+    size_bytes = Column(BigInteger, nullable=False)
     channels = Column(Integer, default=1, nullable=False)
     sample_rate = Column(Integer, default=8000, nullable=False)
 
