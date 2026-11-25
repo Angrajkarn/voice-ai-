@@ -26,7 +26,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/v1/:path*',
-        destination: `${process.env.PYTHON_API_URL || 'http://localhost:8000'}/api/v1/:path*`,
+        destination: `${(process.env.PYTHON_API_URL || 'https://voice-ai-qveo.onrender.com').replace(/\\/$/, '')}/api/v1/:path*`,
       },
     ];
   },
