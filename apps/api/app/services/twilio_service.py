@@ -1,6 +1,6 @@
 # Twilio Service - Handles all Twilio API interactions
 
-from typing import Any
+from typing import Any, List
 
 from app.core.config import settings
 from twilio.base.exceptions import TwilioRestException
