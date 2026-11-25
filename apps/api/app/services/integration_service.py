@@ -73,7 +73,8 @@ class IntegrationService:
             if config.get("auth_token") and not str(config["auth_token"]).startswith("enc:v1:"):
                 config["auth_token"] = encrypt_secret(str(config["auth_token"]))
             update_data["config"] = config
-        for key, value in update_data.items(): setattr(integration, key, value)
+        for key, value in update_data.items():
+            setattr(integration, key, value)
 
         await self.db.commit()
         await self.db.refresh(integration)
