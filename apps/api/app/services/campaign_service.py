@@ -24,12 +24,33 @@ class CampaignService:
         self.db = db
 
     async def create(self, data: CampaignCreate, owner_id: UUID, organization_id: UUID) -> Campaign:
+        customer_ids = list(dict.fromkeys(data.customer_ids))
         campaign = Campaign(
-            **data.model_dump(),
+            **data.model_dump(exclude={"customer_ids"}),
             owner_id=owner_id,
             organization_id=organization_id,
         )
         self.db.add(campaign)
+        await self.db.flush()
+
+        result = await self.db.execute(
+            select(Customer).where(and_(
+                Customer.id.in_(customer_ids),
+                Customer.organization_id == organization_id,
+                Customer.do_not_call.is_(False),
+                Customer.status.notin_([CustomerStatus.DO_NOT_CALL, CustomerStatus.OPTED_OUT]),
+            ))
+        )
+        customers = list(result.scalars().all())
+        if len(customers) != len(customer_ids):
+            raise ValueError("One or more selected customers are unavailable or marked do-not-call/opted-out.")
+
+        for customer in customers:
+            self.db.add(CampaignCustomer(
+                campaign_id=campaign.id,
+                customer_id=customer.id,
+            ))
+        campaign.total_customers = len(customers)
         await self.db.commit()
         await self.db.refresh(campaign)
         return campaign
