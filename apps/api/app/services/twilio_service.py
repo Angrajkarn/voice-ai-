@@ -38,8 +38,9 @@ class TwilioService:
             raise ValueError("Twilio not configured")
 
         base_url = webhook_base_url or settings.TWILIO_WEBHOOK_BASE_URL
-        if not base_url:
-            raise ValueError("Webhook base URL not configured")
+        if not base_url or not base_url.startswith("https://"):
+            raise ValueError("Webhook base URL must be the public HTTPS API URL.")
+        base_url = base_url.rstrip("/")
 
         try:
             call = self.client.calls.create(
