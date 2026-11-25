@@ -1,7 +1,7 @@
 // API client for the web app
 
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
-import { getSession, signOut } from 'next-auth/react';
+import { signOut } from 'next-auth/react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
@@ -74,8 +74,8 @@ class ApiClient {
     return response.data;
   }
 
-  async delete<T>(url: string): Promise<T> {
-    const response = await this.client.delete<T>(url);
+  async delete<T>(url: string, config?: { data?: unknown }): Promise<T> {
+    const response = await this.client.delete<T>(url, config);
     return response.data;
   }
 
@@ -221,7 +221,7 @@ export const integrationsApi = {
   test: (id: string) => api.post(`/integrations/${id}/test`),
   sync: (id: string) => api.post(`/integrations/${id}/sync`),
   getGoogleAuthUrl: (type: 'sheets' | 'drive', campaignId?: string) =>
-    api.get(`/integrations/google/auth-url`, { params: { type, campaignId } }),
+    api.get(`/integrations/google/auth-url`, { type, campaignId }),
   handleGoogleCallback: (code: string, state: string) =>
     api.post('/integrations/google/callback', { code, state }),
 };
