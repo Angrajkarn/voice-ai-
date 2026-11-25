@@ -39,7 +39,8 @@ export default function CampaignsPage() {
 
   async function createCampaign(event: React.FormEvent) {
     event.preventDefault(); setBusy('create'); setError(''); setNotice('');
-    try { const created:any = await campaignsApi.create(form); let assigned=0; if(selectedCustomers.length){const result=await api.post<any>('/customers/bulk',{customer_ids:selectedCustomers,action:'add_to_campaign',campaign_id:created.id});assigned=result.success||0;} setModal(false); setSelectedCustomers([]); setForm({name:'',description:'',purpose:'',ai_instructions:'',opening_script:'',language:'en-IN',voice_id:'Google.en-IN-Wavenet-D',calling_window_start:'09:00',calling_window_end:'18:00',calling_timezone:'Asia/Kolkata',max_calls_per_day:100,delay_between_calls:30}); setNotice('Campaign created. '+assigned+' customers assigned.'); await load(); }
+    if(selectedCustomers.length===0){setError('Select at least one customer for this campaign.');return;}
+    try { await campaignsApi.create({...form,customer_ids:selectedCustomers}); setModal(false); setSelectedCustomers([]); setForm({name:'',description:'',purpose:'',ai_instructions:'',opening_script:'',language:'en-IN',voice_id:'Google.en-IN-Wavenet-D',calling_window_start:'09:00',calling_window_end:'18:00',calling_timezone:'Asia/Kolkata',max_calls_per_day:100,delay_between_calls:30}); setNotice('Campaign created and customers assigned.'); await load(); }
     catch(e) { setError(e instanceof Error ? e.message : 'Campaign could not be created.'); }
     finally { setBusy(''); }
   }
