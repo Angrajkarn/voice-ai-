@@ -1,6 +1,6 @@
 // Database client and utilities for AI Voice Calling Platform
 
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import type { PaginationParams, PaginatedResult } from '../utils';
 
 // ============================================
@@ -29,7 +29,7 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
  * Execute multiple operations in a transaction
  */
 export async function transaction<T>(
-  fn: (tx: PrismaClient) => Promise<T>
+  fn: (tx: Prisma.TransactionClient) => Promise<T>
 ): Promise<T> {
   return prisma.$transaction(fn);
 }
@@ -230,7 +230,7 @@ export async function getCampaignMetrics(campaignId: string): Promise<{
     prisma.call.count({ where: { campaignId, status: { in: ['COMPLETED', 'BUSY', 'NO_ANSWER', 'VOICEMAIL'] } } }),
     prisma.call.count({ where: { campaignId, interestLevel: { in: ['HOT', 'WARM'] } } }),
     prisma.callback.count({ where: { campaignId, status: 'SCHEDULED' } }),
-    prisma.customer.count({ where: { campaigns: { some: { campaignId } }, status: 'OPTED_OUT' } }),
+    prisma.customer.count({ where: { campaignCustomers: { some: { campaignId } }, status: 'OPTED_OUT' } }),
     prisma.call.aggregate({
       where: { campaignId, duration: { not: null } },
       _avg: { duration: true },
