@@ -1,6 +1,10 @@
 # Integration Service - Manages third-party integrations
 
 import json
+
+from openai import AsyncOpenAI
+from twilio.base.exceptions import TwilioRestException
+from twilio.rest import Client
 from datetime import datetime
 from typing import Any
 from uuid import UUID
@@ -111,7 +115,7 @@ class IntegrationService:
 
     async def _test_google_sheets(self, integration: Integration) -> dict[str, Any]:
         try:
-            client = await self.google_sheets._get_client(integration)
+            await self.google_sheets._get_client(integration)
             # Try to list spreadsheets (limited)
             return {"success": True, "message": "Google Sheets authentication successful"}
         except Exception as e:
@@ -125,7 +129,7 @@ class IntegrationService:
         try:
             client = AsyncOpenAI(api_key=config.get("api_key"))
             # Test with a simple completion
-            response = await client.chat.completions.create(
+            await client.chat.completions.create(
                 model=config.get("model", "gpt-4o"),
                 messages=[{"role": "user", "content": "Test"}],
                 max_tokens=5,
