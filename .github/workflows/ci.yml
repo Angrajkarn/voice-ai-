@@ -280,7 +280,8 @@ jobs:
     name: Deploy to Production (VPS)
     runs-on: ubuntu-latest
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Disabled: production is deployed on Render, not to a VPS.
+    if: ${{ false }}
     environment: production
     concurrency:
       group: voiceai-production-deploy
