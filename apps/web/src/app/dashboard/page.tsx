@@ -43,18 +43,21 @@ const mockMetrics = [
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = React.useState<'overview' | 'campaigns' | 'recent'>('overview');
-  const [metrics, setMetrics] = React.useState(mockMetrics.map((item) => ({ ...item, value: '—', change: 'Live' })));
+  const [metrics, setMetrics] = React.useState(mockMetrics.map((item) => ({ ...item, value: '—', change: 'Selected period' })));
   const [recentCalls, setRecentCalls] = React.useState<any[]>([]);
   const [campaigns, setCampaigns] = React.useState<any[]>([]);
   const [dataLoading, setDataLoading] = React.useState(true);
   const [dataError, setDataError] = React.useState('');
+  const [selectedDays, setSelectedDays] = React.useState('30');
+  const [statusFilter, setStatusFilter] = React.useState('all');
+  const [campaignFilter, setCampaignFilter] = React.useState('all');
 
   React.useEffect(() => {
     let mounted = true;
     const loadDashboard = async () => {
       const [analyticsResult, callsResult, campaignsResult] = await Promise.allSettled([
-        api.get<any>('/analytics/dashboard'),
-        callsApi.list({ page: 1, pageSize: 50 }),
+        api.get<any>('/analytics/organization', { period: 'daily', days: Number(selectedDays) }),
+        callsApi.list({ page: 1, pageSize: 100, status: statusFilter === 'all' ? undefined : statusFilter, campaignId: campaignFilter === 'all' ? undefined : campaignFilter, dateFrom: new Date(Date.now() - Number(selectedDays) * 86400000).toISOString(), dateTo: new Date().toISOString() }),
         campaignsApi.list({ page: 1, pageSize: 50 }),
       ]);
       if (!mounted) return;
@@ -63,14 +66,15 @@ export default function DashboardPage() {
       const campaignPayload: any = campaignsResult.status === 'fulfilled' ? campaignsResult.value : {};
       const callRows = Array.isArray(callsPayload?.data) ? callsPayload.data : [];
       const campaignRows = Array.isArray(campaignPayload?.data) ? campaignPayload.data : [];
-      const totalCustomers = Number(analyticsPayload?.total_customers || 0);
-      const totalCalls = Number(analyticsPayload?.total_calls || 0);
-      const completed = Number(analyticsPayload?.completed_calls || 0);
-      const failed = Number(analyticsPayload?.failed_calls || 0);
-      const answered = Number(analyticsPayload?.answered_calls || 0);
-      const interested = Number(analyticsPayload?.interested_customers || 0);
-      const hot = Number(analyticsPayload?.hot_leads || 0);
-      const callbackCount = Number(analyticsPayload?.callbacks_scheduled || 0);
+      const summary = analyticsPayload?.summary || {};
+      const totalCustomers = Number(summary.total_customers || 0);
+      const totalCalls = Number(summary.total_calls || 0);
+      const completed = Number(summary.completed_calls || 0);
+      const failed = Number(summary.failed_calls || 0);
+      const answered = Number(summary.answered_calls || 0);
+      const interested = Number(summary.interested_customers || 0);
+      const hot = Number(summary.hot_leads || 0);
+      const callbackCount = Number(summary.callbacks_scheduled || 0);
       const values = [totalCustomers, totalCalls, completed, failed, answered, interested, hot, callbackCount];
       setMetrics(mockMetrics.map((item, index) => ({ ...item, value: values[index].toLocaleString('en-IN'), change: 'Live' })));
       setRecentCalls(callRows.slice(0, 8).map((call: any) => ({
@@ -83,6 +87,7 @@ export default function DashboardPage() {
         time: call.created_at ? formatRelativeTime(call.created_at) : '—',
       })));
       setCampaigns(campaignRows.slice(0, 5).map((campaign: any) => ({
+        id: campaign.id,
         name: campaign.name || 'Untitled campaign',
         status: String(campaign.status || 'DRAFT').toUpperCase(),
         customers: Number(campaign.total_customers ?? campaign.customer_count ?? 0),
@@ -97,7 +102,7 @@ export default function DashboardPage() {
     void loadDashboard();
     const timer = window.setInterval(loadDashboard, 30000);
     return () => { mounted = false; window.clearInterval(timer); };
-  }, []);
+  }, [selectedDays, statusFilter, campaignFilter]);
 
   return (
     <DashboardLayout>
@@ -110,14 +115,25 @@ export default function DashboardPage() {
             <p className="mt-1 text-xs text-muted-foreground">{dataLoading ? "Connecting to workspace…" : "Refreshes automatically every 30 seconds"}{dataError ? ` · ${dataError}` : ""}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Calendar className="mr-2 h-4 w-4" />
-              Last 30 days
-            </Button>
-            <Button variant="outline" size="sm">
-              <Filter className="mr-2 h-4 w-4" />
-              Filters
-            </Button>
+            <label className="flex items-center gap-2 rounded-md border bg-background px-3 text-sm">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span className="sr-only">Reporting period</span>
+              <select aria-label="Reporting period" className="h-9 bg-transparent outline-none" value={selectedDays} onChange={(event) => setSelectedDays(event.target.value)}>
+                <option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last 12 months</option>
+              </select>
+            </label>
+            <label className="rounded-md border bg-background px-3 text-sm">
+              <span className="sr-only">Call status filter</span>
+              <select aria-label="Call status" className="h-9 bg-transparent outline-none" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+                <option value="all">All statuses</option><option value="COMPLETED">Completed</option><option value="FAILED">Failed</option><option value="NO_ANSWER">No answer</option><option value="BUSY">Busy</option><option value="IN_PROGRESS">In progress</option>
+              </select>
+            </label>
+            <label className="rounded-md border bg-background px-3 text-sm">
+              <span className="sr-only">Campaign filter</span>
+              <select aria-label="Campaign" className="h-9 max-w-[150px] bg-transparent outline-none" value={campaignFilter} onChange={(event) => setCampaignFilter(event.target.value)}>
+                <option value="all">All campaigns</option>{campaigns.map((campaign: any) => <option key={campaign.id} value={campaign.id}>{campaign.name}</option>)}
+              </select>
+            </label>
             <Button size="sm" onClick={() => window.location.assign('/dashboard/campaigns')}>
               <Plus className="mr-2 h-4 w-4" />
               New Campaign
@@ -138,7 +154,7 @@ export default function DashboardPage() {
                       <span className={cn('text-sm font-medium', metric.change === 'Live' || metric.change.startsWith('+') ? 'text-green-600' : 'text-red-600')}>
                         {metric.change}
                       </span>
-                      <span className="text-sm text-muted-foreground">vs last period</span>
+                      <span className="text-sm text-muted-foreground">selected period</span>
                     </div>
                   </div>
                   <div className={cn('p-3 rounded-xl', metric.bgColor)}>
