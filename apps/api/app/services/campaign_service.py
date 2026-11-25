@@ -271,7 +271,7 @@ class CampaignService:
         opt_out_count = await self.db.scalar(
             select(func.count(Customer.id)).where(
                 and_(
-                    Customer.campaigns.any(CampaignCustomer.campaign_id == campaign_id),
+                    select(CampaignCustomer.id).where(and_(CampaignCustomer.customer_id == Customer.id, CampaignCustomer.campaign_id == campaign_id)).exists(),
                     Customer.status == "OPTED_OUT",
                 )
             )
