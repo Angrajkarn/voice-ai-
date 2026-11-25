@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.models.callback import Callback
 from app.models.campaign import Campaign
 from app.models.enums import CallbackStatus
+from app.schemas.call import CallCreate
 from app.schemas.callback import CallbackCreate, CallbackUpdate
 from app.services.call_service import CallService
 from sqlalchemy import and_, func, select
