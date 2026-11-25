@@ -2,7 +2,10 @@
 
 
 import pytest
-from app.models.enums import CampaignStatus
+from app.core.config import settings
+from app.models.integration import Integration
+from app.models.campaign_customer import CampaignCustomer
+from app.models.enums import CampaignStatus, IntegrationType
 from app.schemas.campaign import CampaignCreate, CampaignUpdate
 from app.services.campaign_service import CampaignService
 
@@ -75,9 +78,20 @@ async def test_delete_campaign(db_session, test_organization, test_user, test_ca
 
 
 @pytest.mark.asyncio
-async def test_campaign_lifecycle(db_session, test_organization, test_user, test_campaign):
+async def test_campaign_lifecycle(db_session, test_organization, test_user, test_campaign, test_customer, monkeypatch):
     """Test campaign start, pause, stop lifecycle"""
     service = CampaignService(db_session)
+    monkeypatch.setattr(settings, "OPENAI_API_KEY", "test-openai-key")
+    monkeypatch.setattr(settings, "TWILIO_WEBHOOK_BASE_URL", "https://voice.example.test")
+    db_session.add(Integration(
+        type=IntegrationType.TWILIO,
+        name="Test Twilio",
+        config={"phone_number": "+15551234567"},
+        organization_id=test_organization.id,
+        is_active=True,
+    ))
+    db_session.add(CampaignCustomer(campaign_id=test_campaign.id, customer_id=test_customer.id))
+    await db_session.commit()
 
     # Start campaign
     started = await service.start(test_campaign.id, test_organization.id)
