@@ -15,8 +15,8 @@ const sections: Record<string, SectionConfig> = {
   'ai-agent': { title: 'AI Agent', description: 'Configure the voice agent that handles your customer conversations.', icon: Bot, empty: 'The AI agent management API is not exposed by the current backend yet. Connect the agent service before enabling production controls.' },
   'live-calls': { title: 'Live calls', description: 'Monitor calls currently being processed by your campaigns.', endpoint: '/calls?page=1&pageSize=50&status=IN_PROGRESS', icon: Radio, refresh: true, empty: 'No active calls were returned by the API.' },
   calls: { title: 'Call history', description: 'Review call outcomes, durations and customer interactions.', endpoint: '/calls?page=1&pageSize=50', icon: PhoneCall, refresh: true },
-  transcripts: { title: 'Transcripts', description: 'Open call conversations and review their transcript records.', endpoint: '/calls?page=1&pageSize=50', icon: FileText, refresh: true, empty: 'No calls with transcript data were returned.' },
-  recordings: { title: 'Recordings', description: 'Find calls and open their associated audio recordings.', endpoint: '/calls?page=1&pageSize=50', icon: Mic, refresh: true, empty: 'No calls with recording data were returned.' },
+  transcripts: { title: 'Transcripts', description: 'Open call conversations and review their transcript records.', endpoint: '/calls?page=1&pageSize=50', icon: FileText, refresh: true, empty: 'No transcript records are available for the calls in this period.' },
+  recordings: { title: 'Recordings', description: 'Find calls and open their associated audio recordings.', endpoint: '/calls?page=1&pageSize=50', icon: Mic, refresh: true, empty: 'No recording assets are available for the calls in this period.' },
   callbacks: { title: 'Callbacks', description: 'Track scheduled follow-ups and callback outcomes.', endpoint: '/callbacks?page=1&pageSize=50', icon: CalendarClock, refresh: true },
   analytics: { title: 'Analytics', description: 'Explore organization performance and calling trends.', icon: BarChart3, refresh: true, empty: 'Analytics are not available for this organization yet.' },
   integrations: { title: 'Integrations', description: 'Manage connected services for your VoiceAI workspace.', icon: Plug, empty: 'No integrations are connected to this workspace yet.' },
@@ -54,7 +54,17 @@ export default function SectionPage() {
     try {
       setError('');
       let payload: any;
-      if (config.endpoint) payload = await api.get<any>(config.endpoint);
+      if (section === 'transcripts' || section === 'recordings') {
+        const callsPayload = await api.get<any>('/calls', { page: 1, pageSize: 100 });
+        const calls = Array.isArray(callsPayload?.data) ? callsPayload.data : [];
+        const detailResults = await Promise.allSettled(calls.filter((call: any) => call.id).map(async (call: any) => {
+          const detail = section === 'transcripts'
+            ? await api.get<any>('/calls/' + call.id + '/transcript')
+            : await api.get<any>('/calls/' + call.id + '/recording');
+          return { ...call, ...detail, call_id: call.id };
+        }));
+        payload = { data: detailResults.filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled').map(result => result.value) };
+      } else if (config.endpoint) payload = await api.get<any>(config.endpoint);
       else if (section === 'settings') payload = await api.get<any>('/settings/profile');
       else if (section === 'analytics') payload = await api.get<any>('/analytics/organization', { period: 'daily', days: 30 });
       else {
