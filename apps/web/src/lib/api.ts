@@ -1,9 +1,9 @@
 // API client for the web app
 
-import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig, AxiosRequestConfig } from 'axios';
 import { signOut } from 'next-auth/react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 
 class ApiClient {
   private client: AxiosInstance;
@@ -54,8 +54,8 @@ class ApiClient {
   }
 
   // Generic request methods
-  async get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
-    const response = await this.client.get<T>(url, { params });
+  async get<T>(url: string, params?: Record<string, unknown>, config?: AxiosRequestConfig): Promise<T> {
+    const response = await this.client.get<T>(url, { ...config, params });
     return response.data;
   }
 
@@ -151,7 +151,7 @@ export const customersApi = {
   import: (file: File, options?: { skipDuplicates?: boolean; updateExisting?: boolean; campaignId?: string }) =>
     api.upload('/customers/import', file),
   export: (params?: { campaignId?: string; format?: 'csv' | 'xlsx' }) =>
-    api.get('/customers/export', { ...params, responseType: 'blob' }),
+    api.get<Blob>('/customers/export', params, { responseType: 'blob' }),
   bulkAction: (data: { customerIds: string[]; action: string; campaignId?: string; callbackDate?: string }) =>
     api.post('/customers/bulk', data),
   getByCampaign: (campaignId: string, params?: { page?: number; pageSize?: number; status?: string }) =>
@@ -175,7 +175,7 @@ export const callsApi = {
   }) => api.get<{ data: any[]; total: number; page: number; pageSize: number; totalPages: number }>('/calls', params),
   get: (id: string) => api.get(`/calls/${id}`),
   getTranscript: (id: string) => api.get(`/calls/${id}/transcript`),
-  getRecording: (id: string) => api.get(`/calls/${id}/recording`, { responseType: 'blob' }),
+  getRecording: (id: string) => api.get<Blob>(`/calls/${id}/recording`, undefined, { responseType: 'blob' }),
   getLiveCalls: (campaignId: string) => api.get(`/campaigns/${campaignId}/calls/live`),
   retry: (id: string) => api.post(`/calls/${id}/retry`),
   cancel: (id: string) => api.post(`/calls/${id}/cancel`),
@@ -208,7 +208,7 @@ export const analyticsApi = {
   getOrganizationAnalytics: (organizationId: string, params?: { period?: string; days?: number }) =>
     api.get(`/analytics/organizations/${organizationId}`, params),
   exportReport: (type: string, params?: Record<string, unknown>) =>
-    api.get(`/analytics/export/${type}`, { ...params, responseType: 'blob' }),
+    api.get<Blob>(`/analytics/export/${type}`, params, { responseType: 'blob' }),
 };
 
 // Integrations
