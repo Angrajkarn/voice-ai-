@@ -4,17 +4,14 @@ from celery import shared_task
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy import select, and_, func
-from typing import List
 from uuid import UUID
-from datetime import datetime, timedelta
+from datetime import datetime
 import asyncio
 
 from app.core.config import settings
-from app.db.session import Base
 from app.models.campaign import Campaign
 from app.models.call import Call
-from app.models.campaign_customer import CampaignCustomer
-from app.models.enums import CallStatus, CampaignStatus
+from app.models.enums import CampaignStatus
 from app.services.call_service import CallService
 
 
