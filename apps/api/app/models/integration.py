@@ -3,9 +3,9 @@
 
 from app.models.base import BaseModel
 from app.models.enums import IntegrationType, SyncStatus
-from sqlalchemy import JSON, Boolean, Column, DateTime, ForeignKey, Index, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, String, Text
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 
@@ -14,7 +14,7 @@ class Integration(BaseModel):
 
     type = Column(SQLEnum(IntegrationType), nullable=False)
     name = Column(String(100), nullable=False)
-    config = Column(JSON, default={}, nullable=False)  # Encrypted credentials
+    config = Column(JSONB, default=dict, nullable=False)  # Encrypted credentials
     is_active = Column(Boolean, default=True, nullable=False)
     last_sync_at = Column(DateTime(timezone=True), nullable=True)
     last_sync_status = Column(SQLEnum(SyncStatus), default=SyncStatus.PENDING, nullable=False)
