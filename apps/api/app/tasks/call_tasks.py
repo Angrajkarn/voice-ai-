@@ -3,7 +3,7 @@
 from celery import shared_task
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 from typing import List
 from uuid import UUID
 from datetime import datetime, timedelta
@@ -113,46 +113,24 @@ def initiate_outbound_call(self, call_id: str):
 
 @shared_task
 def process_call_queue():
-    """Process call queue for all running campaigns"""
+    """Process one due outbound call per running campaign on each beat tick."""
     async def _process():
         async with AsyncSessionLocal() as db:
-            campaigns = await db.execute(
-                select(Campaign).where(Campaign.status == CampaignStatus.RUNNING)
-            )
-            campaigns = campaigns.scalars().all()
-
-            results = []
-            for campaign in campaigns:
-                # Check daily limit
-                today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-                calls_today = await db.scalar(
-                    select(Call).where(
-                        and_(
-                            Call.campaign_id == campaign.id,
-                            Call.created_at >= today_start,
-                        )
-                    )
-                )
-
-                if calls_today and len(calls_today) >= campaign.max_calls_per_day:
-                    continue
-
-                # Process calls for this campaign
-                call_service = CallService(db)
-                for _ in range(5):  # Process up to 5 calls per campaign per run
-                    call = await call_service.get_next_queued_call(campaign.id)
-                    if not call:
-                        break
-
-                    success = await call_service.initiate_call(call.id)
-                    results.append({"campaign_id": str(campaign.id), "call_id": str(call.id), "success": success})
-
-                    # Respect delay between calls
-                    if campaign.delay_between_calls > 0:
-                        await asyncio.sleep(campaign.delay_between_calls)
-
+            campaigns = await db.execute(select(Campaign).where(Campaign.status == CampaignStatus.RUNNING))
+            results, call_service = [], CallService(db)
+            now = datetime.utcnow()
+            today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            for campaign in campaigns.scalars().all():
+                if not call_service._is_within_calling_window(campaign): continue
+                calls_today = await db.scalar(select(func.count(Call.id)).where(and_(Call.campaign_id == campaign.id, Call.created_at >= today_start))) or 0
+                if calls_today >= campaign.max_calls_per_day: continue
+                last_initiated = await db.scalar(select(func.max(Call.initiated_at)).where(and_(Call.campaign_id == campaign.id, Call.initiated_at.is_not(None))))
+                if last_initiated and (now - last_initiated.replace(tzinfo=None)).total_seconds() < campaign.delay_between_calls: continue
+                call = await call_service.get_next_queued_call(campaign.id)
+                if not call: continue
+                success = await call_service.initiate_call(call.id)
+                results.append({"campaign_id": str(campaign.id), "call_id": str(call.id), "success": success})
             return {"processed": len(results), "results": results}
-
     return asyncio.run(_process())
 
 
