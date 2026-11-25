@@ -2,8 +2,9 @@
 
 from app.models.base import BaseModel
 from app.models.enums import OrganizationPlan
-from sqlalchemy import JSON, Boolean, Column, DateTime, String
+from sqlalchemy import Boolean, Column, DateTime, String
 from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
 
@@ -15,7 +16,7 @@ class Organization(BaseModel):
     logo_url = Column(String(500), nullable=True)
     plan = Column(SQLEnum(OrganizationPlan), default=OrganizationPlan.FREE, nullable=False)
     plan_expires_at = Column(DateTime(timezone=True), nullable=True)
-    settings = Column(JSON, default={}, nullable=False)
+    settings = Column(JSONB, default=dict, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
 
     # Relationships
