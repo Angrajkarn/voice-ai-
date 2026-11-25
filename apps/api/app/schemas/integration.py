@@ -5,7 +5,7 @@ from typing import Any
 from uuid import UUID
 
 from app.models.enums import IntegrationType, SyncStatus
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 
 
 class IntegrationBase(BaseModel):
@@ -35,6 +35,14 @@ class IntegrationResponse(IntegrationBase):
     created_at: datetime
     updated_at: datetime
 
+    @field_serializer("config")
+    def redact_config(self, config: dict[str, Any]) -> dict[str, Any]:
+        sensitive = {"auth_token", "client_secret", "refresh_token", "private_key", "api_key", "token"}
+        def redact(value: Any) -> Any:
+            if isinstance(value, dict): return {key: ("********" if key.lower() in sensitive and item else redact(item)) for key, item in value.items()}
+            if isinstance(value, list): return [redact(item) for item in value]
+            return value
+        return redact(config or {})
     class Config:
         from_attributes = True
 
