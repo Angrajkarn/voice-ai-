@@ -119,7 +119,6 @@ def retry_failed_syncs(self):
     async def _retry():
         async with AsyncSessionLocal() as db:
             from app.models.sync_log import SyncLog
-            from app.models.enums import SyncStatus
 
             failed_syncs = await db.execute(
                 select(SyncLog).where(
