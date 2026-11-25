@@ -160,9 +160,14 @@ class CallService:
 
             import json
             config = integration.config
-            if isinstance(config, str): config = json.loads(config)
+            if isinstance(config, str):
+                config = json.loads(config)
             from_number = config.get("phone_number")
-            campaign_twilio = TwilioService(account_sid=config.get("account_sid"), auth_token=decrypt_secret(config.get("auth_token", "")), phone_number=from_number)
+            campaign_twilio = TwilioService(
+                account_sid=config.get("account_sid"),
+                auth_token=decrypt_secret(config.get("auth_token", "")),
+                phone_number=from_number,
+            )
             if not isinstance(from_number, str) or not from_number:
                 raise ValueError("Twilio integration is missing its phone number")
 
