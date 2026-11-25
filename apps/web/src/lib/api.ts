@@ -30,11 +30,10 @@ class ApiClient {
     // Request interceptor for auth
     this.client.interceptors.request.use(
       async (config: InternalAxiosRequestConfig) => {
-        // In a real app, you'd get the token from next-auth session
-        // const session = await getSession();
-        // if (session?.accessToken) {
-        //   config.headers.Authorization = `Bearer ${session.accessToken}`;
-        // }
+        if (typeof window !== 'undefined') {
+          const token = window.sessionStorage.getItem('voiceai_access_token');
+          if (token) config.headers.Authorization = `Bearer ${token}`;
+        }
         return config;
       },
       (error) => Promise.reject(error)
@@ -45,7 +44,7 @@ class ApiClient {
       (response) => response,
       async (error: AxiosError) => {
         if (error.response?.status === 401) {
-          return Promise.reject(new Error('Authentication is required. Sign-in is not configured on this deployment yet.'));
+          return Promise.reject(new Error('Your session has expired. Please sign in again.'));
         }
         return Promise.reject(this.formatError(error));
       }
