@@ -15,7 +15,7 @@ from sqlalchemy.orm import relationship
 class SuppressionList(BaseModel):
     __tablename__ = "suppression_list"
 
-    phone = Column(String(20), nullable=False, index=True)  # E.164 format
+    phone: Mapped[str] = mapped_column(String(20), nullable=False, index=True)  # E.164 format
     reason: Mapped[SuppressionReason] = mapped_column(SQLEnum(SuppressionReason), nullable=False)
     source: Mapped[SuppressionSource] = mapped_column(SQLEnum(SuppressionSource), nullable=False)
     campaign_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("campaigns.id", ondelete="SET NULL"), nullable=True)

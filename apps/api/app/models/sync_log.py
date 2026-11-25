@@ -17,8 +17,8 @@ class SyncLog(BaseModel):
     __tablename__ = "sync_logs"
 
     integration_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("integrations.id", ondelete="CASCADE"), nullable=False, index=True)
-    operation = Column(String(100), nullable=False)  # SYNC_CUSTOMER, SYNC_CALL, SYNC_RECORDING
-    entity_type = Column(String(100), nullable=False, index=True)  # Customer, Call, Recording
+    operation: Mapped[str] = mapped_column(String(100), nullable=False)  # SYNC_CUSTOMER, SYNC_CALL, SYNC_RECORDING
+    entity_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)  # Customer, Call, Recording
     entity_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     status: Mapped[SyncStatus] = mapped_column(SQLEnum(SyncStatus), default=SyncStatus.PENDING, nullable=False, index=True)
     error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
