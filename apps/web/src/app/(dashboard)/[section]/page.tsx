@@ -13,7 +13,7 @@ type SectionConfig = { title: string; description: string; endpoint?: string; ic
 
 const sections: Record<string, SectionConfig> = {
   'ai-agent': { title: 'AI Agent', description: 'Configure the voice agent that handles your customer conversations.', icon: Bot, empty: 'The AI agent management API is not exposed by the current backend yet. Connect the agent service before enabling production controls.' },
-  'live-calls': { title: 'Live calls', description: 'Monitor calls currently being processed by your campaigns.', endpoint: '/calls?page=1&pageSize=50', icon: Radio, refresh: true, empty: 'No active calls were returned by the API.' },
+  'live-calls': { title: 'Live calls', description: 'Monitor calls currently being processed by your campaigns.', endpoint: '/calls?page=1&pageSize=50&status=IN_PROGRESS', icon: Radio, refresh: true, empty: 'No active calls were returned by the API.' },
   calls: { title: 'Call history', description: 'Review call outcomes, durations and customer interactions.', endpoint: '/calls?page=1&pageSize=50', icon: PhoneCall, refresh: true },
   transcripts: { title: 'Transcripts', description: 'Open call conversations and review their transcript records.', endpoint: '/calls?page=1&pageSize=50', icon: FileText, refresh: true, empty: 'No calls with transcript data were returned.' },
   recordings: { title: 'Recordings', description: 'Find calls and open their associated audio recordings.', endpoint: '/calls?page=1&pageSize=50', icon: Mic, refresh: true, empty: 'No calls with recording data were returned.' },
