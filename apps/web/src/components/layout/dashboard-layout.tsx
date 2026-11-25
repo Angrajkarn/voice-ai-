@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { Sidebar, MobileSidebar, MobileSidebarTrigger } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
-import { Bell, Moon, Sun, User, LogOut, ChevronDown } from 'lucide-react';
+import { Bell, Moon, Sun, User, LogOut, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
