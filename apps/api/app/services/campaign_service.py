@@ -8,7 +8,8 @@ from uuid import UUID
 from app.models.call import Call
 from app.models.callback import Callback
 from app.models.campaign import Campaign
-from app.models.enums import CampaignStatus, CustomerStatus, IntegrationType
+from app.models.enums import CampaignStatus, ConsentStatus, CustomerStatus, IntegrationType
+from app.models.consent_record import ConsentRecord
 from app.models.integration import Integration
 from app.core.config import settings
 from app.models.campaign_customer import CampaignCustomer
@@ -160,13 +161,25 @@ class CampaignService:
             raise ValueError("Connect Twilio and configure an outgoing phone number in Integrations before starting.")
         if not settings.TWILIO_WEBHOOK_BASE_URL:
             raise ValueError("Set TWILIO_WEBHOOK_BASE_URL on the backend to your public HTTPS API URL before starting calls.")
-        members = await self.db.execute(select(Customer).join(CampaignCustomer, CampaignCustomer.customer_id == Customer.id).where(and_(
-            CampaignCustomer.campaign_id == campaign.id, Customer.organization_id == organization_id,
-            Customer.do_not_call.is_(False), Customer.status.notin_([CustomerStatus.DO_NOT_CALL, CustomerStatus.OPTED_OUT]),
+        granted_consent = select(ConsentRecord.id).where(and_(
+            ConsentRecord.organization_id == organization_id,
+            ConsentRecord.status == ConsentStatus.GRANTED,
+            ConsentRecord.revoked_at.is_(None),
+            or_(ConsentRecord.customer_id == Customer.id, ConsentRecord.phone == Customer.phone),
+            or_(ConsentRecord.campaign_id == campaign.id, ConsentRecord.campaign_id.is_(None)),
+        )).exists()
+        members = await self.db.execute(select(Customer).join(
+            CampaignCustomer, CampaignCustomer.customer_id == Customer.id
+        ).where(and_(
+            CampaignCustomer.campaign_id == campaign.id,
+            Customer.organization_id == organization_id,
+            Customer.do_not_call.is_(False),
+            Customer.status.notin_([CustomerStatus.DO_NOT_CALL, CustomerStatus.OPTED_OUT]),
+            granted_consent,
         )))
         customers = list(members.scalars().all())
         if not customers:
-            raise ValueError("Add at least one eligible customer to this campaign before starting.")
+            raise ValueError("Add at least one customer with GRANTED call consent and no do-not-call restriction before starting.")
         existing_ids = set((await self.db.scalars(select(Call.customer_id).where(Call.campaign_id == campaign.id))).all())
         for customer in customers:
             if customer.id not in existing_ids and customer.call_attempts < customer.max_call_attempts:
