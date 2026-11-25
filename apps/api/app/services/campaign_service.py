@@ -159,7 +159,7 @@ class CampaignService:
         from_number = config.get("phone_number") if config else None
         if not from_number:
             raise ValueError("Connect Twilio and configure an outgoing phone number in Integrations before starting.")
-        if not settings.TWILIO_WEBHOOK_BASE_URL:
+        if not settings.TWILIO_WEBHOOK_BASE_URL or not settings.TWILIO_WEBHOOK_BASE_URL.startswith("https://"):
             raise ValueError("Set TWILIO_WEBHOOK_BASE_URL on the backend to your public HTTPS API URL before starting calls.")
         granted_consent = select(ConsentRecord.id).where(and_(
             ConsentRecord.organization_id == organization_id,
