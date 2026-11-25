@@ -226,7 +226,7 @@ export default function CustomersPage() {
                       <input
                         type="checkbox"
                         checked={selectedCustomers.length === paginatedCustomers.length && paginatedCustomers.length > 0}
-                        onChange={handleSelectAll}
+                        onChange={event => handleSelectAll(event.target.checked)}
                         className="rounded border-input"
                       />
                     </TableHead>
