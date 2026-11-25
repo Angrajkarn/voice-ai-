@@ -20,7 +20,7 @@ class CallRecording(BaseModel):
     provider: Mapped[str] = mapped_column(String(50), default="twilio", nullable=False)
     provider_id: Mapped[str] = mapped_column(String(100), nullable=False)
     format: Mapped[str] = mapped_column(String(20), default="mp3", nullable=False)
-    duration = Column(Float, nullable=False)  # seconds
+    duration: Mapped[float] = mapped_column(Float, nullable=False)  # seconds
     size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
     channels: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     sample_rate: Mapped[int] = mapped_column(Integer, default=8000, nullable=False)

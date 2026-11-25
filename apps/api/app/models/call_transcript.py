@@ -14,10 +14,10 @@ class CallTranscript(BaseModel):
 
     call_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("calls.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
     full_text: Mapped[str] = mapped_column(Text, nullable=False)
-    segments = Column(JSONB, nullable=False)  # Array of {speaker, text, start_time, end_time, confidence, language}
+    segments: Mapped[Any] = mapped_column(JSONB, nullable=False)  # Array of {speaker, text, start_time, end_time, confidence, language}
     language: Mapped[str] = mapped_column(String(10), default="en-IN", nullable=False)
     word_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    duration = Column(Float, nullable=False)  # seconds
+    duration: Mapped[float] = mapped_column(Float, nullable=False)  # seconds
 
     # Relationships
     call: Mapped[Any] = relationship("Call", back_populates="transcript")
