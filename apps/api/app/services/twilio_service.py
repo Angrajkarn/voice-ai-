@@ -113,7 +113,6 @@ class TwilioService:
 
         try:
             recording = self.client.recordings(recording_sid).fetch()
-            media_url = f"https://api.twilio.com{recording.uri.replace('.json', '.mp3')}"
             # In production, use httpx to download
             return None
         except TwilioRestException:
