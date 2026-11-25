@@ -33,7 +33,7 @@ class AuditService:
             user_id=user_id,
             old_data=old_data,
             new_data=new_data,
-            metadata=metadata or {},
+            metadata_json=metadata or {},
         )
         self.db.add(audit_log)
         await self.db.commit()
@@ -187,7 +187,7 @@ class AuditService:
                 "user_id": log.user_id,
                 "old_data": log.old_data,
                 "new_data": log.new_data,
-                "metadata": log.metadata,
+                "metadata": log.metadata_json,
                 "created_at": log.created_at.isoformat(),
             }
             for log in logs
