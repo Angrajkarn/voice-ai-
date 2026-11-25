@@ -89,7 +89,7 @@ async def test_organization(db_session) -> Organization:
 async def test_user(db_session, test_organization) -> User:
     """Create a test user"""
     user = User(
-        email="test@example.com",
+        email=f"test-{uuid4().hex}@example.com",
         name="Test User",
         password_hash="hashed_password",
         role=UserRole.ADMIN,
@@ -138,8 +138,8 @@ async def test_customer(db_session, test_organization) -> Customer:
     customer = Customer(
         first_name="John",
         last_name="Doe",
-        email="john.doe@example.com",
-        phone="+15551234567",
+        email=f"john-{uuid4().hex}@example.com",
+        phone=f"+1555{uuid4().int % 10000000:07d}",
         company="Test Corp",
         location="New York",
         language="en-IN",
@@ -186,7 +186,7 @@ def sample_customer_data():
         "first_name": "John",
         "last_name": "Doe",
         "email": "john.doe@example.com",
-        "phone": "+15551234567",
+        "phone": f"+1555{uuid4().int % 10000000:07d}",
         "company": "Test Corp",
         "location": "New York",
         "language": "en-IN",
