@@ -10,6 +10,7 @@ from typing import Any
 from uuid import UUID
 
 from app.models.enums import IntegrationType, SyncStatus
+from app.core.crypto import decrypt_secret, encrypt_secret
 from app.models.integration import Integration
 from app.schemas.integration import (
     IntegrationCreate,
@@ -30,10 +31,14 @@ class IntegrationService:
         self.openai = OpenAIService()
 
     async def create(self, data: IntegrationCreate, organization_id: UUID) -> Integration:
-        integration = Integration(
-            **data.model_dump(),
-            organization_id=organization_id,
-        )
+        payload = data.model_dump()
+        config = dict(payload.get("config") or {})
+        if payload["type"] == IntegrationType.TWILIO:
+            if not config.get("account_sid", "").startswith("AC") or not config.get("auth_token") or not config.get("phone_number", "").startswith("+"):
+                raise ValueError("Enter a valid Twilio Account SID, Auth Token and E.164 phone number.")
+            config["auth_token"] = encrypt_secret(str(config["auth_token"]))
+            payload["config"] = config
+        integration = Integration(**payload, organization_id=organization_id)
         self.db.add(integration)
         await self.db.commit()
         await self.db.refresh(integration)
@@ -63,8 +68,12 @@ class IntegrationService:
             return None
 
         update_data = data.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(integration, key, value)
+        if integration.type == IntegrationType.TWILIO and update_data.get("config") is not None:
+            config = {**(integration.config or {}), **update_data["config"]}
+            if config.get("auth_token") and not str(config["auth_token"]).startswith("enc:v1:"):
+                config["auth_token"] = encrypt_secret(str(config["auth_token"]))
+            update_data["config"] = config
+        for key, value in update_data.items(): setattr(integration, key, value)
 
         await self.db.commit()
         await self.db.refresh(integration)
@@ -105,11 +114,12 @@ class IntegrationService:
         if isinstance(config, str):
             config = json.loads(config)
 
-        client = Client(config.get("account_sid"), config.get("auth_token"))
+        client = Client(config.get("account_sid"), decrypt_secret(config.get("auth_token", "")))
         try:
-            # Test by fetching account info
             account = client.api.accounts(config.get("account_sid")).fetch()
-            return {"success": True, "message": f"Connected to Twilio account: {account.friendly_name}"}
+            phone_number = config.get("phone_number", "")
+            if not phone_number.startswith("+"): return {"success": False, "error": "Outgoing caller ID must use E.164 format, e.g. +14155550123."}
+            return {"success": True, "message": f"Twilio connected: {account.friendly_name}. Caller ID: {phone_number}."}
         except TwilioRestException as e:
             return {"success": False, "error": f"Twilio error: {e.msg}"}
 
