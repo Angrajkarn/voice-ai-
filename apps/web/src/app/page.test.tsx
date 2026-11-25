@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
-import Home from './page'
+import DashboardPage from './(dashboard)/dashboard/page'
 
-describe('Home Page', () => {
+describe('Dashboard Page', () => {
   it('renders without crashing', () => {
-    render(<Home />)
+    render(<DashboardPage />)
     expect(screen.getByRole('main')).toBeInTheDocument()
   })
 })
