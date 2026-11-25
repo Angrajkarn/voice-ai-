@@ -194,7 +194,7 @@ class CustomerService:
             customers = new_customers.scalars().all()
 
             # Add to campaign
-            for customer in customers:
+            for created_customer in customers:
                 existing_link = await self.db.scalar(
                     select(CampaignCustomer).where(
                         and_(
