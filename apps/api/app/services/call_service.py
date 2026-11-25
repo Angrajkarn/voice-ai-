@@ -138,6 +138,35 @@ class CallService:
         if not call:
             return False
 
+        # Re-check consent and opt-out state immediately before dialing. A contact
+        # may revoke consent after the campaign queue was created.
+        from app.models.consent_record import ConsentRecord
+        from app.models.enums import ConsentStatus, CustomerStatus
+        consent = await self.db.scalar(
+            select(ConsentRecord).where(and_(
+                ConsentRecord.organization_id == call.campaign.organization_id,
+                ConsentRecord.status == ConsentStatus.GRANTED,
+                ConsentRecord.revoked_at.is_(None),
+                or_(
+                    ConsentRecord.customer_id == call.customer_id,
+                    ConsentRecord.phone == call.to_number,
+                ),
+                or_(
+                    ConsentRecord.campaign_id == call.campaign_id,
+                    ConsentRecord.campaign_id.is_(None),
+                ),
+            )).order_by(ConsentRecord.created_at.desc()).limit(1)
+        )
+        if (
+            not consent
+            or call.customer.do_not_call
+            or call.customer.status in (CustomerStatus.DO_NOT_CALL, CustomerStatus.OPTED_OUT)
+        ):
+            call.status = CallStatus.CANCELLED
+            call.failure_reason = "No active call consent or customer has opted out."
+            await self.db.commit()
+            return False
+
         try:
             # Update status to initiating
             call.status = CallStatus.INITIATING
