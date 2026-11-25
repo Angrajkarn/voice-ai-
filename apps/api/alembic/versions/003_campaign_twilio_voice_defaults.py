@@ -23,8 +23,8 @@ def upgrade() -> None:
             'en_US-lessac-medium', 'en_GB-alan-medium'
         )
     """)
-    op.alter_column("campaigns", "voice_id", server_default="Google.en-IN-Wavenet-D")
+    op.alter_column("campaigns", "voice_id", type_=__import__("sqlalchemy").String(length=80), server_default="Google.en-IN-Wavenet-D")
 
 
 def downgrade() -> None:
-    op.alter_column("campaigns", "voice_id", server_default="alloy")
+    op.alter_column("campaigns", "voice_id", type_=__import__("sqlalchemy").String(length=50), server_default="alloy")
