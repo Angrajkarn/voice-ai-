@@ -535,7 +535,7 @@ export const STATUS_COLORS: Record<string, string> = {
   READY: 'blue',
   RUNNING: 'green',
   PAUSED: 'yellow',
-  COMPLETED: 'purple',
+  COMPLETED: 'green',
   STOPPED: 'red',
 
   // Call status
@@ -543,8 +543,7 @@ export const STATUS_COLORS: Record<string, string> = {
   INITIATING: 'blue',
   RINGING: 'yellow',
   IN_PROGRESS: 'green',
-  COMPLETED: 'green',
-  FAILED: 'red',
+
   BUSY: 'orange',
   NO_ANSWER: 'gray',
   VOICEMAIL: 'purple',
@@ -561,7 +560,6 @@ export const STATUS_COLORS: Record<string, string> = {
   NOT_INTERESTED: 'red',
   CALLBACK_REQUESTED: 'purple',
   DO_NOT_CALL: 'red',
-  INVALID_NUMBER: 'red',
   OPTED_OUT: 'red',
 
   // Interest level
@@ -573,7 +571,6 @@ export const STATUS_COLORS: Record<string, string> = {
   // Sync status
   PENDING: 'yellow',
   SYNCED: 'green',
-  FAILED: 'red',
   RETRYING: 'blue',
 };
 
