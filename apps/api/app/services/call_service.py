@@ -5,6 +5,7 @@ from datetime import datetime
 from uuid import UUID
 
 from app.models.call import Call
+from app.core.crypto import decrypt_secret
 from app.models.campaign import Campaign
 from app.models.call_recording import CallRecording
 from app.models.call_transcript import CallTranscript
@@ -16,7 +17,7 @@ from app.models.enums import (
 from app.schemas.call import CallCreate, CallUpdate
 from app.schemas.callback import CallbackCreate
 from app.services.twilio_service import TwilioService
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -127,6 +128,7 @@ class CallService:
             )
             .order_by(Call.queued_at.asc())
             .limit(1)
+            .with_for_update(skip_locked=True)
         )
         return result.scalar_one_or_none()
 
@@ -134,6 +136,35 @@ class CallService:
         """Initiate an outbound call via Twilio"""
         call = await self.get_by_id(call_id)
         if not call:
+            return False
+
+        # Re-check consent and opt-out state immediately before dialing. A contact
+        # may revoke consent after the campaign queue was created.
+        from app.models.consent_record import ConsentRecord
+        from app.models.enums import ConsentStatus, CustomerStatus
+        consent = await self.db.scalar(
+            select(ConsentRecord).where(and_(
+                ConsentRecord.organization_id == call.campaign.organization_id,
+                ConsentRecord.status == ConsentStatus.GRANTED,
+                ConsentRecord.revoked_at.is_(None),
+                or_(
+                    ConsentRecord.customer_id == call.customer_id,
+                    ConsentRecord.phone == call.to_number,
+                ),
+                or_(
+                    ConsentRecord.campaign_id == call.campaign_id,
+                    ConsentRecord.campaign_id.is_(None),
+                ),
+            )).order_by(ConsentRecord.created_at.desc()).limit(1)
+        )
+        if (
+            not consent
+            or call.customer.do_not_call
+            or call.customer.status in (CustomerStatus.DO_NOT_CALL, CustomerStatus.OPTED_OUT)
+        ):
+            call.status = CallStatus.CANCELLED
+            call.failure_reason = "No active call consent or customer has opted out."
+            await self.db.commit()
             return False
 
         try:
@@ -146,29 +177,30 @@ class CallService:
             from app.models.enums import IntegrationType
             from app.models.integration import Integration
 
-            integration = await self.db.scalar(
-                select(Integration).where(
-                    and_(
-                        Integration.campaign_id == call.campaign_id,
-                        Integration.type == IntegrationType.TWILIO,
-                        Integration.is_active.is_(True),
-                    )
-                )
-            )
+            integration = await self.db.scalar(select(Integration).where(and_(
+                Integration.organization_id == call.campaign.organization_id,
+                Integration.type == IntegrationType.TWILIO,
+                Integration.is_active.is_(True),
+                or_(Integration.campaign_id == call.campaign_id, Integration.campaign_id.is_(None)),
+            )).order_by((Integration.campaign_id == call.campaign_id).desc()).limit(1))
 
             if not integration:
                 raise ValueError("No active Twilio integration for this campaign")
 
-            # Decrypt config (in production, use proper encryption)
             import json
             config = integration.config
-
-            # Initiate call via Twilio
+            if isinstance(config, str):
+                config = json.loads(config)
             from_number = config.get("phone_number")
+            campaign_twilio = TwilioService(
+                account_sid=config.get("account_sid"),
+                auth_token=decrypt_secret(config.get("auth_token", "")),
+                phone_number=from_number,
+            )
             if not isinstance(from_number, str) or not from_number:
                 raise ValueError("Twilio integration is missing its phone number")
 
-            call_sid = await self.twilio.make_call(
+            call_sid = await campaign_twilio.make_call(
                 to_number=call.to_number,
                 from_number=from_number,
                 campaign_id=str(call.campaign_id),

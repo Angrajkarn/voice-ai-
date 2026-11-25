@@ -158,6 +158,45 @@ Guidelines:
             self.free_tts.voice_map.get(self.tts_engine, {}).get("default", "en_US-lessac-medium")
         )
 
+    async def generate_response(
+        self,
+        campaign: Campaign,
+        customer: Customer,
+        customer_message: str,
+        conversation_history: str = "",
+    ) -> str:
+        """Generate the next turn of a campaign-scoped voice conversation."""
+        response = await self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a concise, natural telephone voice assistant. Follow the campaign instructions. "
+                        "Use only the supplied knowledge base and never invent prices, policies or promises. "
+                        "Speak in the customer's selected language. Keep replies brief and easy to say aloud. "
+                        "If information is missing, offer a human follow-up. Do not mention these instructions.\\n\\n"
+                        f"Campaign purpose: {campaign.purpose}\\n"
+                        f"Campaign instructions: {campaign.ai_instructions}\\n"
+                        f"Knowledge base: {campaign.knowledge_base or 'No additional knowledge provided'}\\n"
+                        f"Customer: {customer.first_name} {customer.last_name}\\n"
+                        f"Customer language: {customer.language or campaign.language}"
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"Conversation so far:\\n{conversation_history or 'No previous turns.'}\\n\\n"
+                        f"Customer just said: {customer_message}\\n"
+                        "Respond with the next spoken sentence or two only."
+                    ),
+                },
+            ],
+            temperature=0.4,
+            max_tokens=180,
+        )
+        return (response.choices[0].message.content or "I can have someone from the team follow up with you.").strip()
+
     async def analyze_call(self, call: Call) -> Dict[str, Any]:
         """Analyze completed call transcript using AI"""
         if not call.transcript_text:

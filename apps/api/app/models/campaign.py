@@ -31,7 +31,7 @@ class Campaign(BaseModel):
     ai_instructions: Mapped[str] = mapped_column(Text, nullable=False)
     opening_script: Mapped[str] = mapped_column(Text, nullable=False)
     knowledge_base: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    voice_id: Mapped[str] = mapped_column(String(50), default="alloy", nullable=False)
+    voice_id: Mapped[str] = mapped_column(String(80), default="Google.en-IN-Wavenet-D", nullable=False)
     language: Mapped[str] = mapped_column(String(10), default="en-IN", nullable=False)
     supported_languages: Mapped[list[str]] = mapped_column(ARRAY(String), default=["en-IN", "hi-IN", "hinglish"], nullable=False)
     # Calling Configuration

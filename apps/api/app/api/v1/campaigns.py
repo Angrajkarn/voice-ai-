@@ -60,8 +60,10 @@ async def create_campaign(
     organization: Organization = Depends(get_current_organization),
 ):
     service = CampaignService(db)
-    campaign = await service.create(data, current_user.id, organization.id)
-    return campaign
+    try:
+        return await service.create(data, current_user.id, organization.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.get("/{campaign_id}", response_model=CampaignResponse)
@@ -114,7 +116,10 @@ async def start_campaign(
     organization: Organization = Depends(get_current_organization),
 ):
     service = CampaignService(db)
-    campaign = await service.start(campaign_id, organization.id)
+    try:
+        campaign = await service.start(campaign_id, organization.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
     if campaign.status != "RUNNING":
@@ -130,7 +135,10 @@ async def pause_campaign(
     organization: Organization = Depends(get_current_organization),
 ):
     service = CampaignService(db)
-    campaign = await service.pause(campaign_id, organization.id)
+    try:
+        campaign = await service.pause(campaign_id, organization.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
     return campaign
@@ -144,7 +152,10 @@ async def stop_campaign(
     organization: Organization = Depends(get_current_organization),
 ):
     service = CampaignService(db)
-    campaign = await service.stop(campaign_id, organization.id)
+    try:
+        campaign = await service.stop(campaign_id, organization.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
     return campaign

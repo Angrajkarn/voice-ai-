@@ -14,7 +14,7 @@ class CampaignBase(BaseModel):
     ai_instructions: str = Field(..., min_length=1, max_length=10000)
     opening_script: str = Field(..., min_length=1, max_length=2000)
     knowledge_base: str | None = Field(None, max_length=20000)
-    voice_id: str = Field(default="alloy", min_length=1, max_length=50)
+    voice_id: str = Field(default="Google.en-IN-Wavenet-D", min_length=1, max_length=80)
     language: str = Field(default="en-IN", pattern=r'^(en-IN|hi-IN|hinglish|en-US|en-GB)$')
     supported_languages: list[str] = Field(default=["en-IN", "hi-IN", "hinglish"], min_length=1)
     max_calls_per_day: int = Field(default=100, ge=1, le=10000)
@@ -34,6 +34,13 @@ class CampaignBase(BaseModel):
     sheets_sheet_name: str = Field(default="Calls", min_length=1, max_length=100)
     sheets_auto_sync: bool = True
 
+    @field_validator("voice_id")
+    @classmethod
+    def validate_twilio_voice(cls, value: str) -> str:
+        allowed = {*(f"Google.en-IN-Wavenet-{x}" for x in "ABCDEF"), *(f"Google.hi-IN-Wavenet-{x}" for x in "ABCDEF"), "Polly.Aditi", "Polly.Kajal-Neural", "Polly.Raveena", "Polly.Joanna", "Polly.Matthew", "Polly.Amy", "Polly.Brian"}
+        if value not in allowed:
+            raise ValueError("Choose a supported Twilio voice from the voice selector.")
+        return value
     @field_validator('calling_window_end')
     @classmethod
     def validate_window(cls, v, info):
@@ -50,7 +57,7 @@ class CampaignBase(BaseModel):
 
 
 class CampaignCreate(CampaignBase):
-    pass
+    customer_ids: list[UUID] = Field(default_factory=list, max_length=1000)
 
 
 class CampaignUpdate(BaseModel):
@@ -60,7 +67,7 @@ class CampaignUpdate(BaseModel):
     ai_instructions: str | None = Field(None, min_length=1, max_length=10000)
     opening_script: str | None = Field(None, min_length=1, max_length=2000)
     knowledge_base: str | None = Field(None, max_length=20000)
-    voice_id: str | None = Field(None, min_length=1, max_length=50)
+    voice_id: str | None = Field(None, min_length=1, max_length=80)
     language: str | None = Field(None, pattern=r'^(en-IN|hi-IN|hinglish|en-US|en-GB)$')
     supported_languages: list[str] | None = None
     max_calls_per_day: int | None = Field(None, ge=1, le=10000)
@@ -80,6 +87,15 @@ class CampaignUpdate(BaseModel):
     sheets_sheet_name: str | None = Field(None, min_length=1, max_length=100)
     sheets_auto_sync: bool | None = None
     status: CampaignStatus | None = None
+    @field_validator("voice_id")
+    @classmethod
+    def validate_update_twilio_voice(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        allowed = {*(f"Google.en-IN-Wavenet-{x}" for x in "ABCDEF"), *(f"Google.hi-IN-Wavenet-{x}" for x in "ABCDEF"), "Polly.Aditi", "Polly.Kajal-Neural", "Polly.Raveena", "Polly.Joanna", "Polly.Matthew", "Polly.Amy", "Polly.Brian"}
+        if value not in allowed:
+            raise ValueError("Choose a supported Twilio voice from the voice selector.")
+        return value
 
 
 class CampaignResponse(CampaignBase):

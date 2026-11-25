@@ -8,16 +8,22 @@ from twilio.rest import Client
 
 
 class TwilioService:
-    def __init__(self):
-        self.account_sid = settings.TWILIO_ACCOUNT_SID
-        self.auth_token = settings.TWILIO_AUTH_TOKEN
-        self.phone_number = settings.TWILIO_PHONE_NUMBER
-        self.client = None
+    def __init__(self, account_sid: str | None = None, auth_token: str | None = None, phone_number: str | None = None):
+        self.account_sid = account_sid or settings.TWILIO_ACCOUNT_SID
+        self.auth_token = auth_token or settings.TWILIO_AUTH_TOKEN
+        self.phone_number = phone_number or settings.TWILIO_PHONE_NUMBER
+        self._client: Client | None = None
         if self.account_sid and self.auth_token:
-            self.client = Client(self.account_sid, self.auth_token)
+            self._client = Client(self.account_sid, self.auth_token)
+
+    @property
+    def client(self) -> Client:
+        if self._client is None:
+            raise ValueError("Twilio not configured")
+        return self._client
 
     def is_configured(self) -> bool:
-        return self.client is not None
+        return self._client is not None
 
     async def make_call(
         self,
@@ -32,8 +38,9 @@ class TwilioService:
             raise ValueError("Twilio not configured")
 
         base_url = webhook_base_url or settings.TWILIO_WEBHOOK_BASE_URL
-        if not base_url:
-            raise ValueError("Webhook base URL not configured")
+        if not base_url or not base_url.startswith("https://"):
+            raise ValueError("Webhook base URL must be the public HTTPS API URL.")
+        base_url = base_url.rstrip("/")
 
         try:
             call = self.client.calls.create(
@@ -41,7 +48,7 @@ class TwilioService:
                 from_=from_number,
                 url=f"{base_url}/webhooks/twilio/voice?campaign_id={campaign_id}&call_id={call_id}",
                 status_callback=f"{base_url}/webhooks/twilio/status?campaign_id={campaign_id}&call_id={call_id}",
-                status_callback_event=["initiated", "ringing", "answered", "completed", "busy", "failed", "no-answer", "canceled"],
+                status_callback_event=["initiated", "ringing", "answered", "completed"],
                 status_callback_method="POST",
                 record=True,
                 recording_channels="mono",
@@ -164,7 +171,7 @@ class TwilioService:
         signature: str,
     ) -> bool:
         """Validate Twilio webhook signature"""
-        if not self.is_configured():
+        if not self.is_configured() or not self.auth_token:
             return False
 
         from twilio.request_validator import RequestValidator

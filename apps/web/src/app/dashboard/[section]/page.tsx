@@ -13,11 +13,11 @@ type SectionConfig = { title: string; description: string; endpoint?: string; ic
 
 const sections: Record<string, SectionConfig> = {
   'ai-agent': { title: 'AI Agent', description: 'Configure the voice agent that handles your customer conversations.', icon: Bot, empty: 'The AI agent management API is not exposed by the current backend yet. Connect the agent service before enabling production controls.' },
-  'live-calls': { title: 'Live calls', description: 'Monitor calls currently being processed by your campaigns.', endpoint: '/calls?page=1&pageSize=50&status=IN_PROGRESS', icon: Radio, refresh: true, empty: 'No active calls were returned by the API.' },
-  calls: { title: 'Call history', description: 'Review call outcomes, durations and customer interactions.', endpoint: '/calls?page=1&pageSize=50', icon: PhoneCall, refresh: true },
-  transcripts: { title: 'Transcripts', description: 'Open call conversations and review their transcript records.', endpoint: '/calls?page=1&pageSize=50', icon: FileText, refresh: true, empty: 'No transcript records are available for the calls in this period.' },
-  recordings: { title: 'Recordings', description: 'Find calls and open their associated audio recordings.', endpoint: '/calls?page=1&pageSize=50', icon: Mic, refresh: true, empty: 'No recording assets are available for the calls in this period.' },
-  callbacks: { title: 'Callbacks', description: 'Track scheduled follow-ups and callback outcomes.', endpoint: '/callbacks?page=1&pageSize=50', icon: CalendarClock, refresh: true },
+  'live-calls': { title: 'Live calls', description: 'Monitor calls currently being processed by your campaigns.', endpoint: '/calls?page=1&page_size=50&status=IN_PROGRESS', icon: Radio, refresh: true, empty: 'No active calls were returned by the API.' },
+  calls: { title: 'Call history', description: 'Review call outcomes, durations and customer interactions.', endpoint: '/calls?page=1&page_size=50', icon: PhoneCall, refresh: true },
+  transcripts: { title: 'Transcripts', description: 'Open call conversations and review their transcript records.', endpoint: '/calls?page=1&page_size=50', icon: FileText, refresh: true, empty: 'No transcript records are available for the calls in this period.' },
+  recordings: { title: 'Recordings', description: 'Find calls and open their associated audio recordings.', endpoint: '/calls?page=1&page_size=50', icon: Mic, refresh: true, empty: 'No recording assets are available for the calls in this period.' },
+  callbacks: { title: 'Callbacks', description: 'Track scheduled follow-ups and callback outcomes.', endpoint: '/callbacks?page=1&page_size=50', icon: CalendarClock, refresh: true },
   analytics: { title: 'Analytics', description: 'Explore organization performance and calling trends.', icon: BarChart3, refresh: true, empty: 'Analytics are not available for this organization yet.' },
   integrations: { title: 'Integrations', description: 'Manage connected services for your VoiceAI workspace.', icon: Plug, empty: 'No integrations are connected to this workspace yet.' },
   settings: { title: 'Settings', description: 'Manage your account profile and workspace preferences.', icon: Settings, empty: 'No profile settings were returned.' },
@@ -98,8 +98,8 @@ export default function SectionPage() {
       <div className="mx-auto w-full max-w-[1600px] space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex items-start gap-3">
-            <div className="rounded-xl border bg-card p-3"><Icon className="h-6 w-6 text-primary" /></div>
-            <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Workspace</p><h1 className="mt-1 text-3xl font-semibold tracking-tight">{config.title}</h1><p className="mt-1 text-sm text-muted-foreground">{config.description}</p></div>
+            <div className="rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/10 to-secondary/10 p-3.5 shadow-sm"><Icon className="h-6 w-6 text-primary" /></div>
+            <div><h1 className="text-3xl font-semibold tracking-tight">{config.title}</h1></div>
           </div>
           <div className="flex items-center gap-3">
             {lastUpdated && <span className="text-xs text-muted-foreground">Updated {lastUpdated.toLocaleTimeString()}</span>}
@@ -109,9 +109,9 @@ export default function SectionPage() {
 
         {error && <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"><strong>Could not load live data.</strong> {error}</div>}
 
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden rounded-2xl border-base-300/70 bg-base-100 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between border-b">
-            <div><CardTitle className="text-base">{config.title} records</CardTitle><p className="mt-1 text-sm text-muted-foreground">{config.refresh ? 'Automatically refreshes every 30 seconds' : 'Live data from your workspace API'}</p></div>
+            <div><CardTitle className="text-base">{config.title} records</CardTitle><p className="mt-1 text-sm text-muted-foreground">{config.refresh ? 'Refreshes from the workspace API every 30 seconds' : 'Live data from your workspace API'}</p></div>
             <Badge variant="outline">{loading ? 'Loading' : `${records.length} records`}</Badge>
           </CardHeader>
           <CardContent className="p-0">
