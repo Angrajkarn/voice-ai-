@@ -15,7 +15,7 @@ from sqlalchemy.orm import relationship
 class ConsentRecord(BaseModel):
     __tablename__ = "consent_records"
 
-    phone = Column(String(20), nullable=False, index=True)  # E.164 format
+    phone: Mapped[str] = mapped_column(String(20), nullable=False, index=True)  # E.164 format
     status: Mapped[ConsentStatus] = mapped_column(SQLEnum(ConsentStatus), default=ConsentStatus.PENDING, nullable=False, index=True)
     method: Mapped[ConsentMethod] = mapped_column(SQLEnum(ConsentMethod), nullable=False)
     proof_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)

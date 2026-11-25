@@ -18,7 +18,7 @@ class Integration(BaseModel):
 
     type: Mapped[IntegrationType] = mapped_column(SQLEnum(IntegrationType), nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    config = Column(JSONB, default=dict, nullable=False)  # Encrypted credentials
+    config: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)  # Encrypted credentials
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     last_sync_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     last_sync_status: Mapped[SyncStatus] = mapped_column(SQLEnum(SyncStatus), default=SyncStatus.PENDING, nullable=False)
